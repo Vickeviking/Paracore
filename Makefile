@@ -87,6 +87,27 @@ PLAY_BIN := $(PLAY_SRC:playground/%.c=$(BUILD)/play_%)
         canary stress bench check fmt fmt-check tidy compile_commands progress \
         arm clean distclean help
 
+# ── Vilka verktyg fungerar FAKTISKT på den här maskinen? ──────────────────
+#
+# "Installerat" och "fungerar" är inte samma sak. ThreadSanitizer finns i gcc
+# på Pi:n men vägrar starta där: kärnan ger 47-bitars VMA och TSan stöder 39,
+# 42 och 48. Ett verktyg som inte kan köra har inte svarat "nej" — det har inte
+# kontrollerat någonting alls, och de två får aldrig se likadana ut.
+#
+# Probet bygger och kör ett minimalt program en gång och sparar svaret.
+$(BUILD)/.tsan-works: | $(BUILD)
+	@printf 'int main(void){return 0;}\n' > $(BUILD)/.probe.c
+	@if $(CC) -fsanitize=thread -O1 $(BUILD)/.probe.c -o $(BUILD)/.probe 2>/dev/null \
+	    && $(BUILD)/.probe 2>$(BUILD)/.probe.log; then echo yes > $@; \
+	 else sed -n '1,2p' $(BUILD)/.probe.log > $@.why 2>/dev/null || true; echo no > $@; fi
+	@rm -f $(BUILD)/.probe.c $(BUILD)/.probe
+
+$(BUILD):
+	@mkdir -p $(BUILD)
+
+TSAN_WORKS = $$(cat $(BUILD)/.tsan-works 2>/dev/null || echo unknown)
+TSAN_WHY   = $$(cat $(BUILD)/.tsan-works.why 2>/dev/null | tr '\n' ' ')
+
 all: lib tests play
 	@echo "byggt i $(BUILD)/  (MODE=$(MODE))"
 
@@ -127,7 +148,16 @@ test:
 	@build/debug/paratest $(ARGS)
 
 # ThreadSanitizer: kapplöpningar OCH låsordningsinversioner.
-tsan:
+tsan: $(BUILD)/.tsan-works
+	@if [ "$(TSAN_WORKS)" != "yes" ]; then \
+	   echo "── make tsan ─────────────────────────────────────────"; \
+	   echo "ThreadSanitizer KAN INTE KÖRA på den här maskinen ($$(uname -m)):"; \
+	   echo "    $(TSAN_WHY)"; \
+	   echo "Det är inte ett resultat — inga kapplöpningar är kontrollerade."; \
+	   echo "Kör steget på en maskin där TSan startar; helgrind (make helgrind)"; \
+	   echo "hittar mycket av samma sak och bryr sig inte om VMA-bredden."; \
+	   exit 1; \
+	 fi
 	@$(MAKE) --no-print-directory MODE=tsan build/tsan/paratest
 	@echo "── make tsan ─────────────────────────────────────────"
 	@TSAN_OPTIONS="$(TSAN_OPTIONS)" build/tsan/paratest $(ARGS)
@@ -171,17 +201,21 @@ drd:
 # Det här är repots viktigaste mål. Tre program som är TRASIGA MED FLIT, och
 # tre verktyg som MÅSTE fälla dem. Går något av dem igenom har verktyget
 # slutat fungera, och varje grönt resultat du fått sedan dess är värdelöst.
-canary:
+canary: $(BUILD)/.tsan-works
 	@echo "══ KANARIEFÅGLAR ════════════════════════════════════════════════"
 	@echo "   fyra trasiga program. verktygen MÅSTE hitta dem."
 	@echo
-	@$(MAKE) --no-print-directory MODE=tsan build/tsan/canary_race >/dev/null
 	@$(MAKE) --no-print-directory MODE=debug build/debug/canary_deadlock >/dev/null
 	@$(MAKE) --no-print-directory MODE=asan build/asan/canary_leak >/dev/null
 	@mkdir -p build
 	@printf '1/4  datakapplöpning under TSan ......... '
-	@if TSAN_OPTIONS="halt_on_error=1" timeout 60 build/tsan/canary_race \
-	     >/dev/null 2>build/canary_race.log; then \
+	@if [ "$(TSAN_WORKS)" != "yes" ]; then \
+	   echo "OTILLGÄNGLIG  ← TSan startar inte på $$(uname -m)."; \
+	   echo "     $(TSAN_WHY)"; \
+	   echo "     Inte ett godkännande: inga kapplöpningar är kontrollerade här."; \
+	 elif $(MAKE) --no-print-directory MODE=tsan build/tsan/canary_race >/dev/null \
+	      && TSAN_OPTIONS="halt_on_error=1" timeout 60 build/tsan/canary_race \
+	         >/dev/null 2>build/canary_race.log; then \
 	   echo "MISSAD  ← TSan hittade INTE kapplöpningen. Sanitizern är trasig."; \
 	   exit 1; \
 	 elif grep -q "data race" build/canary_race.log; then echo "fälld  ✓"; \
@@ -222,7 +256,14 @@ canary:
 	 elif grep -q "LeakSanitizer" build/canary_leak.log; then echo "fälld  ✓"; \
 	 else echo "OKLART  ← se build/canary_leak.log"; exit 1; fi
 	@echo
-	@echo "   alla fyra fälldes. verktygskedjan fungerar — du kan lita på grönt."
+	@if [ "$(TSAN_WORKS)" = "yes" ] && command -v $(VG) >/dev/null 2>&1; then \
+	   echo "   alla fyra fälldes. verktygskedjan fungerar — du kan lita på grönt."; \
+	 else \
+	   echo "   DELVIS KÖRD. Det som kunde köras fälldes, men den här maskinen"; \
+	   echo "   saknar verktyg (se OTILLGÄNGLIG/HOPPAD ovan). Ett grönt 'make"; \
+	   echo "   check' här täcker mindre än ett grönt på en fullt utrustad"; \
+	   echo "   maskin. Kör hela svepet någonstans där allt finns."; \
+	 fi
 	@echo "   loggar: build/canary_*.log"
 
 # Watchdogen: visa att en deadlock rapporteras som TIMEOUT och inte hänger CI.
@@ -252,7 +293,9 @@ check:
 	@echo "══ PARACORE CHECK ═══════════════════════════════════════════════"
 	@$(MAKE) --no-print-directory fmt-check
 	@$(MAKE) --no-print-directory test
-	@$(MAKE) --no-print-directory tsan
+	@$(MAKE) --no-print-directory $(BUILD)/.tsan-works
+	@if [ "$(TSAN_WORKS)" = "yes" ]; then $(MAKE) --no-print-directory tsan; \
+	 else echo "── make tsan ── ÖVERHOPPAD: TSan startar inte på $$(uname -m)"; fi
 	@$(MAKE) --no-print-directory asan
 	@$(MAKE) --no-print-directory canary
 	@echo
