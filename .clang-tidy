@@ -1,0 +1,20 @@
+# Paracore — statisk analys.
+#
+# Vi bryr oss om samtidighet och om buggar som sanitizern bara ser om den
+# råkar köra rätt interleaving. Stilcheckarna är avstängda; .clang-format
+# äger stilen.
+Checks: >
+  -*,
+  bugprone-*,
+  concurrency-*,
+  clang-analyzer-*,
+  cert-*,
+  misc-*,
+  performance-*,
+  readability-inconsistent-declaration-parameter-name,
+  -bugprone-easily-swappable-parameters,
+  -misc-include-cleaner,
+  -cert-dcl37-c,
+  -cert-dcl51-cpp
+WarningsAsErrors: 'concurrency-*,bugprone-signal-handler,clang-analyzer-core.*'
+HeaderFilterRegex: '(core|sync|exec|ds|mem|bench|include)/.*\.h$'
