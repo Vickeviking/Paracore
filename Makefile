@@ -306,13 +306,24 @@ SOURCES_ALL := $(shell find core sync exec ds mem bench include src tests playgr
                  -name '*.c' -o -name '*.h' 2>/dev/null | sort)
 
 fmt:
+	@command -v clang-format >/dev/null 2>&1 \
+	  || { echo "clang-format saknas på $$(uname -m) — installera den först."; exit 1; }
 	@clang-format -i $(SOURCES_ALL) && echo "formaterat: $(words $(SOURCES_ALL)) filer"
 
+# Tre utfall, inte två. "clang-format saknas" är INTE "koden är oformaterad":
+# det första säger ingenting om koden, det andra fäller den. Att skriva
+# "FEL — kör 'make fmt'" när verktyget inte finns skickar dig att jaga en bugg
+# som inte finns, och lär dig samtidigt att ignorera raden.
 fmt-check:
-	@clang-format --dry-run --Werror $(SOURCES_ALL) 2>&1 | head -20; \
-	 clang-format --dry-run --Werror $(SOURCES_ALL) >/dev/null 2>&1 \
-	   && echo "fmt-check ... ok" \
-	   || { echo "fmt-check ... FEL — kör 'make fmt'"; exit 1; }
+	@if ! command -v clang-format >/dev/null 2>&1; then \
+	   echo "fmt-check ... HOPPAD — ingen clang-format på $$(uname -m)."; \
+	   echo "     Formateringen är inte kontrollerad här, inte godkänd."; \
+	 elif clang-format --dry-run --Werror $(SOURCES_ALL) >/dev/null 2>&1; then \
+	   echo "fmt-check ... ok"; \
+	 else \
+	   clang-format --dry-run --Werror $(SOURCES_ALL) 2>&1 | head -20; \
+	   echo "fmt-check ... FEL — kör 'make fmt'"; exit 1; \
+	 fi
 
 compile_commands compile_commands.json:
 	@command -v bear >/dev/null 2>&1 \
