@@ -190,9 +190,16 @@ canary:
 	@# canary_deadlock hänger ALDRIG — den kör igenom på nolltid och är ändå
 	@# trasig. Att helgrind fäller den är beviset på att verktyget hittar en
 	@# latent deadlock som inget test någonsin skulle se.
-	@timeout 60 $(VG) --tool=helgrind --error-exitcode=42 \
-	   build/debug/canary_deadlock >/dev/null 2>build/canary_deadlock.log || true
-	@if grep -qi "lock order" build/canary_deadlock.log; then echo "fälld  ✓"; \
+	@#
+	@# Saknas valgrind (Pi:n har inte det) hoppas steget över med besked i
+	@# stället för att fälla grinden — men det SÄGS rakt ut. En utebliven
+	@# kontroll som ser ut som en godkänd är precis det den här filen finns
+	@# för att förhindra.
+	@if ! command -v $(VG) >/dev/null 2>&1; then \
+	   echo "HOPPAD  ← ingen valgrind på $$(uname -m). Kör steget på laptopen."; \
+	 elif timeout 60 $(VG) --tool=helgrind --error-exitcode=42 \
+	        build/debug/canary_deadlock >/dev/null 2>build/canary_deadlock.log; \
+	      grep -qi "lock order" build/canary_deadlock.log; then echo "fälld  ✓"; \
 	 else echo "MISSAD  ← helgrind såg ingen låsordningsinversion."; \
 	   echo "     se build/canary_deadlock.log"; exit 1; fi
 	@printf '3/4  garanterad deadlock (watchdog) ..... '

@@ -171,3 +171,25 @@ svagare minnesmodell är det billigaste sättet att sluta lita på
 ```bash
 make arm     # korskompilerar om verktygskedjan finns, annars säger den hur du gör
 ```
+
+---
+
+## Verifierat på
+
+| Maskin | Arkitektur | Kompilator | Status |
+|---|---|---|---|
+| devboxen | x86-64, 24 kärnor | gcc 16.2 **och** clang 22.1 | `make check` grönt, alla fyra kanariefåglar fällda |
+| gunnar (Pi 5) | **aarch64**, 4 kärnor | gcc | `make all` + `make test` grönt (19/19) |
+
+Pi:n saknar valgrind och clang, så `make canary` hoppar över helgrind-steget
+där — och **säger det rakt ut** i stället för att räkna det som godkänt. En
+utebliven kontroll som ser ut som en grön är precis vad kanariefåglarna finns
+för att förhindra.
+
+Cachelinjen är 64 byte på båda, så `PARA_CACHELINE` stämmer. Kontrollera själv
+på en ny maskin:
+
+```bash
+getconf LEVEL1_DCACHE_LINESIZE
+./scripts/setup-new-machine.sh
+```
