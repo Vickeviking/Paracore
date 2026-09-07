@@ -178,14 +178,50 @@ make arm     # korskompilerar om verktygskedjan finns, annars säger den hur du 
 
 | Maskin | Arkitektur | Kompilator | Status |
 |---|---|---|---|
-| devboxen | x86-64, 24 kärnor | gcc 16.2 **och** clang 22.1 | `make check` grönt, alla fyra kanariefåglar fällda |
-| thinkpaden | x86-64, 8 kärnor | gcc 16.2 | `make check` grönt, alla fyra fällda |
-| gunnar (Pi 5) | **aarch64**, 4 kärnor | gcc | `make all` + `make test` grönt (19/19) |
+| devboxen | x86-64, 24 kärnor | gcc 16.2 **och** clang 22.1 | `ALLT GRÖNT` — varje lane kördes |
+| thinkpaden | x86-64, 8 kärnor | gcc 16.2 | `ALLT GRÖNT` — varje lane kördes |
+| gunnar (Pi 5) | **aarch64**, 4 kärnor | gcc | `GRÖNT SÅ LÅNGT MASKINEN RÄCKER` — se nedan |
 
-Pi:n saknar valgrind och clang, så `make canary` hoppar över helgrind-steget
-där — och **säger det rakt ut** i stället för att räkna det som godkänt. En
-utebliven kontroll som ser ut som en grön är precis vad kanariefåglarna finns
-för att förhindra.
+Pi:n saknar `clang-format` och `valgrind`, och ThreadSanitizer **finns** i dess
+gcc men vägrar starta: kärnan ger 47-bitars VMA och TSan stöder 39, 42 och 48.
+`make check` säger det rakt ut och slutar med en annan rubrik:
+
+```
+fmt-check ... HOPPAD — ingen clang-format på aarch64.
+     Formateringen är inte kontrollerad här, inte godkänd.
+── make tsan ── ÖVERHOPPAD: TSan startar inte på aarch64
+1/4  datakapplöpning under TSan ......... OTILLGÄNGLIG  ← TSan startar inte på aarch64.
+2/4  låsordningsinversion (helgrind) .... HOPPAD  ← ingen valgrind på aarch64.
+3/4  garanterad deadlock (watchdog) ..... dödad efter 5 s  ✓
+4/4  minnesläcka under ASan ............. fälld  ✓
+══ GRÖNT SÅ LÅNGT MASKINEN RÄCKER ═══
+```
+
+## Tre utfall, aldrig två
+
+Det är repots enda egentliga regel om verktyg, och den har redan tjänat in sig
+fyra gånger:
+
+| | |
+|---|---|
+| **fälld / ok** | verktyget kördes och gav ett svar |
+| **HOPPAD / OTILLGÄNGLIG** | verktyget kunde inte köra — orsaken skrivs ut |
+| **MISSAD / FEL** | verktyget kördes och hittade ingenting → grinden faller |
+
+Ett verktyg som inte kunde köra har **inte** svarat "nej". Det har inte
+kontrollerat någonting alls. De två får aldrig se likadana ut, för då börjar
+man läsa raden som brus — och då är hela grinden dekoration.
+
+De fyra gångerna, allihop hittade genom att köra samma commit på en annan
+maskin:
+
+1. `valgrind` saknades på Pi:n → grinden föll som om koden var trasig
+2. helgrind **kraschade internt** (`hg_main.c:5411: Assertion 'found' failed`)
+   på thinkpaden, för att kanariefågeln skapade en tråd efter en `join`. En
+   kraschad detektor ser i utskriften nästan ut som en ren frikännande.
+3. TSan **startar inte** på Pi:ns VMA-bredd → rått `FATAL`, ingen förklaring
+4. `clang-format` saknades → `fmt-check` svarade **"FEL — kör 'make fmt'"**,
+   alltså skyllde på koden för att verktyget inte fanns. Den värsta av de fyra.
 
 Kanariefåglarna har redan gjort sitt jobb en gång: repot gick grönt på
 devboxen och rött på thinkpaden, för att `make canary` skapade en tråd EFTER

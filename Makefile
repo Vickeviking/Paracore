@@ -299,7 +299,17 @@ check:
 	@$(MAKE) --no-print-directory asan
 	@$(MAKE) --no-print-directory canary
 	@echo
-	@echo "══ ALLT GRÖNT ═══════════════════════════════════════════════════"
+	@if [ "$(TSAN_WORKS)" = "yes" ] && command -v $(VG) >/dev/null 2>&1 \
+	     && command -v clang-format >/dev/null 2>&1; then \
+	   echo "══ ALLT GRÖNT ═══════════════════════════════════════════════════"; \
+	   echo "   Varje lane kördes på den här maskinen."; \
+	 else \
+	   echo "══ GRÖNT SÅ LÅNGT MASKINEN RÄCKER ═══════════════════════════════"; \
+	   echo "   Allt som KUNDE köras är grönt — men inte allt kunde köras."; \
+	   echo "   Se HOPPAD/OTILLGÄNGLIG/ÖVERHOPPAD ovan. Det här är inte samma"; \
+	   echo "   sak som ett grönt på en fullt utrustad maskin, och skillnaden"; \
+	   echo "   står här just för att den annars glöms bort."; \
+	 fi
 
 # ── verktyg ───────────────────────────────────────────────────────────────
 SOURCES_ALL := $(shell find core sync exec ds mem bench include src tests playground \
