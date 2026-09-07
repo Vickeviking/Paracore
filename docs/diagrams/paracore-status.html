@@ -126,13 +126,13 @@ footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);font-
 
 <header class="top">
   <div class="wrap">
-    <span class="eyebrow">Paracore · byggstatus 7 september 2026</span>
+    <span class="eyebrow">Paracore · byggstatus 8 september 2026</span>
     <h1>Vad som finns, vad du bygger, och var lektionerna inte räcker</h1>
     <p class="sub">Ett svar på sex frågor, mätt ur repot och ur spåret i Arcturon — inte uppskattat.
        Två av dem har obehagliga svar, och de står först.</p>
     <div class="meta">
       <span>commit 10eb1fe</span><span>21 headers · 106 publika deklarationer</span>
-      <span>19 veckor · 7 sep 2026 → 17 jan 2027</span><span>gcc 16.2 · clang 22.1</span>
+      <span>96 lektioner · 19 veckor · 7 sep → 17 jan</span><span>gcc 16.2 · clang 22.1</span>
     </div>
   </div>
 </header>
@@ -143,70 +143,75 @@ footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);font-
     <div class="v is-ok"><b>3</b><span>filer klara</span></div>
     <div class="v is-wait"><b>14</b><span>filer du bygger</span></div>
     <div class="v is-wait"><b>58</b><span>stubbar kvar</span></div>
-    <div class="v is-gap"><b>10 / ~55</b><span>lektioner skrivna</span></div>
-    <div class="v is-gap"><b>2 / 12</b><span>moduler klara</span></div>
+    <div class="v is-ok"><b>96</b><span>lektioner skrivna</span></div>
+    <div class="v is-ok"><b>12 / 12</b><span>moduler klara</span></div>
+    <div class="v is-ok"><b>48</b><span>förberedelsepass</span></div>
     <div class="v is-ok"><b>21</b><span>headers på plats</span></div>
   </div>
 
   <section>
     <div class="shead"><span class="n">01</span><h2>Är alla lektioner genererade?</h2></div>
-    <div class="answer is-gap prose">
-      <p class="lead">Nej. 10 lektioner finns, för modul 1 och 2. Modul 3–12 är tomma.</p>
-      <p>Orsaken är en medveten regel i Arcturon, inte ett fel: lektionerna skrivs <strong>en modul
-         före</strong> den du är på, så ett spår du överger efter modul två aldrig betalar för modul nio.
-         Regeln kan inte kringgås via API:t — jag försökte med <code>regenerate</code>, den gatear ändå.</p>
-      <p>PR #584 lägger till en uttrycklig opt-in per spår (<code>generate-all</code>). Den är grön —
-         17/17 integrationstester — men <strong>kräver en deploy</strong>. När den är ute skrivs alla tolv
-         modulerna på ungefär sex minuter, två per minut, och då kan täckningen nedan verifieras på
-         riktig text i stället för på plan.</p>
+    <div class="answer is-ok prose">
+      <p class="lead">Ja. 96 lektioner över alla tolv moduler, noll misslyckade.</p>
+      <p>28 teorilektioner, 20 labbar och <strong>48 förberedelsepass</strong> — ett före varje
+         innehållslektion, varvat prep → lektion → prep → lektion. 661 000 tecken totalt, varav
+         283 000 är läsanvisningar.</p>
+      <p>Regeln som stoppade det hette <em>en modul före</em>: innehållet följer takten så att ett
+         spår man överger efter modul två aldrig betalar för modul nio. Den finns kvar som förval.
+         Det som tillkom är en uttrycklig opt-in per spår — när ägaren redan bestämt sig ska ett
+         kostnadsskydd inte bestämma över den som betalar kostnaden.</p>
     </div>
   </section>
 
   <section>
     <div class="shead"><span class="n">02</span><h2>Ger lektionerna full täckning på böckerna?</h2></div>
     <div class="answer is-gap prose">
-      <p class="lead">Nej — inte om målet är 70 % av allt. Två papper landar helt, AMP nästan,
-         och de två tjocka böckerna långt under.</p>
-      <p>Siffrorna nedan är <em>planerad</em> täckning: vilka kapitel modulsammanfattningarna faktiskt
-         skickar dig till. Verklig täckning går att mäta först när modul 3–12 är skrivna.</p>
+      <p class="lead">Nästan. Fyra av fem böcker får riktiga läsanvisningar — och en får
+         inga alls.</p>
+      <p>Siffrorna nedan är <strong>mätta i de 48 förberedelsepassen</strong>, inte uppskattade:
+         omnämnanden och distinkta kapitel de faktiskt skickar dig till.</p>
     </div>
 
     <div class="cov">
       <div class="covrow">
-        <div class="t">Boehm<small>PLDI 2005 · 12 sidor</small></div>
-        <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
-        <div class="pct" style="color:var(--ok)">100%</div>
+        <div class="t">Herlihy &amp; Shavit<small>AMP · 187 omnämnanden, 17 distinkta kapitel</small></div>
+        <div class="bar"><i style="width:94%;background:var(--ok)"></i></div>
+        <div class="pct" style="color:var(--ok)">kap 2–16</div>
       </div>
       <div class="covrow">
-        <div class="t">ThreadSanitizer<small>WBIA 2009 · 8 sidor</small></div>
-        <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
-        <div class="pct" style="color:var(--ok)">100%</div>
-      </div>
-      <div class="covrow">
-        <div class="t">Herlihy &amp; Shavit<small>AMP · kap 2,3,5,7–16 av 18</small></div>
+        <div class="t">McKenney<small>89 omnämnanden — kap 15, Appendix C, listings och figurer</small></div>
         <div class="bar"><i style="width:72%;background:var(--ok)"></i></div>
-        <div class="pct" style="color:var(--ok)">~72%</div>
+        <div class="pct" style="color:var(--ok)">89</div>
       </div>
       <div class="covrow">
-        <div class="t">Drepper<small>Memory · 114 sidor, avsnitt 2,3,6</small></div>
-        <div class="bar"><i style="width:40%;background:var(--wait)"></i></div>
-        <div class="pct" style="color:var(--wait)">~40%</div>
+        <div class="t">ThreadSanitizer<small>8 i förberedelserna, 21 totalt · artikeln är 8 sidor</small></div>
+        <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
+        <div class="pct" style="color:var(--ok)">hel</div>
       </div>
       <div class="covrow">
-        <div class="t">McKenney<small>Is Parallel Programming Hard · ~700 sidor</small></div>
-        <div class="bar"><i style="width:16%;background:var(--gap)"></i></div>
-        <div class="pct" style="color:var(--gap)">~16%</div>
+        <div class="t">Drepper<small>16 omnämnanden — under bokens titel, aldrig under efternamnet</small></div>
+        <div class="bar"><i style="width:45%;background:var(--wait)"></i></div>
+        <div class="pct" style="color:var(--wait)">16</div>
+      </div>
+      <div class="covrow">
+        <div class="t">Boehm<small>0 omnämnanden i något förberedelsepass, i någon modul</small></div>
+        <div class="bar"><i style="width:2%;background:var(--gap)"></i></div>
+        <div class="pct" style="color:var(--gap)">0</div>
       </div>
     </div>
 
     <div class="prose" style="margin-top:1.4rem">
-      <p><strong>Varför de två sista är låga är inte ett fel i planen.</strong> Drepper och McKenney är
-         referensverk på 114 respektive ~700 sidor. Modulerna citerar dem där de biter — MESI och falsk
-         delning i modul 4, RCU och återvinning i modul 9 — men ingen kurs på 19 veckor läser McKenney
-         pärm till pärm, och en plan som påstod det vore en lögn du upptäckte i november.</p>
-      <p>Ska du nå 70 % på dem behövs <strong>läsanvisningar per lektion</strong>, inte fler lektioner:
-         en förberedelse som säger vilka kapitel som ska vara lästa innan passet. Det är precis den
-         mekanism som saknas idag, och den ligger utanför den här sidan.</p>
+      <p><strong>Boehm är hålet, och det är ett riktigt fynd.</strong> Noll läshänvisningar i
+         alla tolv moduler — trots att modul 2:s hela tes <em>är</em> hans artikel, och att den
+         ligger som en av spårets fem grundböcker. Den troliga orsaken: instruktionen ber om
+         <em>kapitel</em>, och en artikel på tolv sidor har inga. För ett papper i den längden är
+         rätt anvisning "läs hela", och den formuleringen finns inte i prompten.</p>
+      <p>Drepper såg först ut att saknas på samma sätt, men gör det inte: han citeras sexton
+         gånger under bokens titel och aldrig under sitt efternamn. Den första mätningen sa noll
+         för båda — skillnaden mellan de två fallen är hela skälet att mäta i stället för att gissa.</p>
+      <p>McKenney gick från ~16 % <em>planerad</em> till 89 uppmätta omnämnanden med kapitel,
+         appendix, listings och figurnummer. Det var precis den lyftningen förberedelsepassen
+         byggdes för, och den blev av.</p>
     </div>
   </section>
 
