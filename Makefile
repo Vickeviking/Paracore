@@ -358,11 +358,17 @@ progress:
 	@echo "══ PARACORE — BYGGPLAN ══════════════════════════════════════════"
 	@echo
 	@printf "  stubbar kvar (PARA_ERR_NOTIMPL) : %s\n" \
-	  "$$(grep -rc 'PARA_ERR_NOTIMPL' src --include='*.c' | awk -F: '{s+=$$2} END {print s+0}')"
+	  "$$(grep -rn 'return PARA_ERR_NOTIMPL' src --include='*.c' | wc -l)"
 	@printf "  moduler som väntar              : %s\n" \
 	  "$$(grep -rhoE 'MODUL [0-9]+' core sync exec ds mem bench | sort -u -t' ' -k2n | wc -l)"
 	@printf "  rader C (utan tester)           : %s\n" \
 	  "$$(cat $(LIB_SRC) core/*.h sync/*.h exec/*.h ds/*.h mem/*.h bench/*.h include/*.h | wc -l)"
+	@echo
+	@echo "  KLART — bygg aldrig om dessa:"
+	@for f in $$(find src -name '*.c' | sort); do \
+	   grep -q 'return PARA_ERR_NOTIMPL' $$f || printf "    %s\n" "$$f"; \
+	 done
+	@printf "    %s\n" "sync/atomic.h (header-only)" "tests/para_test.[ch]" "Makefile + tests/canary_*.c"
 	@echo
 	@echo "  nästa fil att öppna, per modul:"
 	@grep -rlE 'MODUL [0-9]+ fyller' src --include='*.c' 2>/dev/null | sort | \
