@@ -238,3 +238,14 @@ på en ny maskin:
 getconf LEVEL1_DCACHE_LINESIZE
 ./scripts/setup-new-machine.sh
 ```
+
+---
+
+## Statusdokumentet
+
+`docs/diagrams/paracore-status.html` svarar på sex frågor med siffror mätta ur
+repot, inte uppskattade: vad som är implementerat, vad du kommer bygga, om
+alla headers finns, hur du skriver ett test, hur dev-loopen ser ut, och om
+lektionerna ger full täckning på böckerna. Öppna den i en webbläsare.
+
+Två av svaren är nej, och de står först i dokumentet.

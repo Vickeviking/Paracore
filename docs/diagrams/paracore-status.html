@@ -1,0 +1,343 @@
+<title>Paracore Byggstatus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --paper:#F1F4F7; --surface:#FFFFFF; --sunk:#E7ECF1;
+  --ink:#0F151C; --ink-2:#3D4B59; --muted:#67788A; --line:#D3DBE3;
+  --accent:#1F6F8B; --accent-soft:#DCEAF0;
+  --ok:#2C7A57; --ok-soft:#DDEDE4;
+  --wait:#8A6410; --wait-soft:#F3E9D2;
+  --gap:#A6362F; --gap-soft:#F4DEDC;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --disp:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0C1117; --surface:#141B23; --sunk:#0A0F14;
+  --ink:#E4EAF1; --ink-2:#B3C0CE; --muted:#7D8D9D; --line:#25313D;
+  --accent:#5FB3CE; --accent-soft:#14303A;
+  --ok:#63C39A; --ok-soft:#123026;
+  --wait:#D6A94A; --wait-soft:#31280F;
+  --gap:#E3776D; --gap-soft:#3A1F1C;
+}}
+:root[data-theme="dark"]{
+  --paper:#0C1117; --surface:#141B23; --sunk:#0A0F14;
+  --ink:#E4EAF1; --ink-2:#B3C0CE; --muted:#7D8D9D; --line:#25313D;
+  --accent:#5FB3CE; --accent-soft:#14303A;
+  --ok:#63C39A; --ok-soft:#123026;
+  --wait:#D6A94A; --wait-soft:#31280F;
+  --gap:#E3776D; --gap-soft:#3A1F1C;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65;
+     -webkit-font-smoothing:antialiased;padding:0 0 6rem}
+.wrap{max-width:1080px;margin:0 auto;padding:0 clamp(1rem,4vw,2.5rem)}
+.prose{max-width:68ch}
+h1,h2,h3,.eyebrow,.badge,th,.mono{font-family:var(--disp)}
+h1{font-size:clamp(2rem,5vw,3.1rem);line-height:1.04;letter-spacing:-.022em;font-weight:700;margin:0;text-wrap:balance}
+h2{font-size:clamp(1.3rem,2.6vw,1.7rem);letter-spacing:-.014em;font-weight:600;margin:0;text-wrap:balance}
+h3{font-size:1.02rem;letter-spacing:-.005em;font-weight:600;margin:0 0 .4rem}
+p{margin:0 0 1rem}
+a{color:var(--accent)}
+code,.mono,pre{font-family:var(--mono)}
+code{font-size:.87em;background:var(--sunk);padding:.1em .35em;border-radius:3px}
+.eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* header */
+header.top{border-bottom:1px solid var(--line);background:var(--surface);padding:clamp(2.2rem,6vw,3.6rem) 0 2rem;margin-bottom:2.5rem}
+.top .wrap{display:flex;flex-direction:column;gap:1.1rem}
+.sub{font-size:1.08rem;color:var(--ink-2);max-width:62ch;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+
+/* verdict strip */
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:1px;background:var(--line);
+         border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:0}
+.v{background:var(--surface);padding:.9rem 1rem;display:flex;flex-direction:column;gap:.15rem}
+.v b{font-family:var(--disp);font-size:1.55rem;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.v span{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.v.is-ok b{color:var(--ok)} .v.is-wait b{color:var(--wait)} .v.is-gap b{color:var(--gap)}
+
+section{margin:3.4rem 0 0}
+.shead{display:flex;align-items:baseline;gap:.9rem;margin:0 0 1.2rem;padding-bottom:.55rem;border-bottom:1px solid var(--line)}
+.shead .n{font-family:var(--mono);font-size:.78rem;color:var(--accent);font-weight:700}
+
+/* answer callout */
+.answer{border-left:3px solid var(--accent);background:var(--surface);padding:.9rem 1.1rem;margin:0 0 1.4rem;border-radius:0 4px 4px 0}
+.answer.is-gap{border-left-color:var(--gap)} .answer.is-ok{border-left-color:var(--ok)}
+.answer p:last-child{margin:0}
+.answer .lead{font-family:var(--disp);font-weight:600;font-size:.95rem;letter-spacing:.005em}
+
+/* file table */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.83rem;min-width:640px}
+th{font-size:.66rem;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:600;
+   text-align:left;padding:.6rem .85rem;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--sunk)}
+td{padding:.5rem .85rem;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.f{font-family:var(--mono);font-size:.8rem;white-space:nowrap}
+td.d{font-family:var(--body);color:var(--ink-2);font-size:.92rem}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--muted)}
+.badge{display:inline-block;font-family:var(--mono);font-size:.66rem;font-weight:700;letter-spacing:.06em;
+       padding:.16rem .45rem;border-radius:3px;white-space:nowrap;text-transform:uppercase}
+.b-ok{background:var(--ok-soft);color:var(--ok)}
+.b-wait{background:var(--wait-soft);color:var(--wait)}
+.b-gap{background:var(--gap-soft);color:var(--gap)}
+.b-mod{background:var(--accent-soft);color:var(--accent)}
+
+/* code */
+pre{background:var(--sunk);border:1px solid var(--line);border-radius:5px;padding:.9rem 1rem;overflow-x:auto;
+    font-size:.79rem;line-height:1.6;margin:0 0 1.2rem}
+pre .c{color:var(--muted)}
+pre .k{color:var(--accent);font-weight:700}
+pre .g{color:var(--ok);font-weight:700}
+pre .r{color:var(--gap);font-weight:700}
+
+/* loop */
+.loop{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0}
+.loop li{display:grid;grid-template-columns:2.1rem 1fr;gap:.9rem;padding:.85rem 0;border-bottom:1px solid var(--line)}
+.loop li:last-child{border-bottom:0}
+.loop .step{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--accent);padding-top:.28rem}
+.loop code{font-size:.8em}
+.loop .why{color:var(--ink-2);font-size:.93rem;display:block;margin-top:.15rem}
+
+/* coverage bars */
+.cov{display:flex;flex-direction:column;gap:.85rem;margin:0}
+.covrow{display:grid;grid-template-columns:minmax(150px,1fr) 2.6fr auto;gap:.9rem;align-items:center}
+.covrow .t{font-size:.9rem;font-weight:600;font-family:var(--disp)}
+.covrow .t small{display:block;font-family:var(--mono);font-size:.66rem;color:var(--muted);font-weight:400;letter-spacing:.04em}
+.bar{height:9px;background:var(--sunk);border-radius:2px;overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%}
+.pct{font-family:var(--mono);font-size:.78rem;font-variant-numeric:tabular-nums;min-width:3.4em;text-align:right;font-weight:700}
+.thresh{position:relative;height:1.1rem;margin-top:-.2rem}
+
+ul.plain{padding-left:1.15rem;margin:0 0 1rem}
+ul.plain li{margin-bottom:.4rem}
+footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);font-family:var(--mono);
+       font-size:.72rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.4rem 1.4rem}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){.v,.answer{transition:none}}
+@media (max-width:620px){
+  .covrow{grid-template-columns:1fr auto;gap:.4rem .8rem}
+  .covrow .bar{grid-column:1/-1;order:3}
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <span class="eyebrow">Paracore · byggstatus 7 september 2026</span>
+    <h1>Vad som finns, vad du bygger, och var lektionerna inte räcker</h1>
+    <p class="sub">Ett svar på sex frågor, mätt ur repot och ur spåret i Arcturon — inte uppskattat.
+       Två av dem har obehagliga svar, och de står först.</p>
+    <div class="meta">
+      <span>commit 10eb1fe</span><span>21 headers · 106 publika deklarationer</span>
+      <span>19 veckor · 7 sep 2026 → 17 jan 2027</span><span>gcc 16.2 · clang 22.1</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="verdict">
+    <div class="v is-ok"><b>3</b><span>filer klara</span></div>
+    <div class="v is-wait"><b>14</b><span>filer du bygger</span></div>
+    <div class="v is-wait"><b>58</b><span>stubbar kvar</span></div>
+    <div class="v is-gap"><b>10 / ~55</b><span>lektioner skrivna</span></div>
+    <div class="v is-gap"><b>2 / 12</b><span>moduler klara</span></div>
+    <div class="v is-ok"><b>21</b><span>headers på plats</span></div>
+  </div>
+
+  <section>
+    <div class="shead"><span class="n">01</span><h2>Är alla lektioner genererade?</h2></div>
+    <div class="answer is-gap prose">
+      <p class="lead">Nej. 10 lektioner finns, för modul 1 och 2. Modul 3–12 är tomma.</p>
+      <p>Orsaken är en medveten regel i Arcturon, inte ett fel: lektionerna skrivs <strong>en modul
+         före</strong> den du är på, så ett spår du överger efter modul två aldrig betalar för modul nio.
+         Regeln kan inte kringgås via API:t — jag försökte med <code>regenerate</code>, den gatear ändå.</p>
+      <p>PR #584 lägger till en uttrycklig opt-in per spår (<code>generate-all</code>). Den är grön —
+         17/17 integrationstester — men <strong>kräver en deploy</strong>. När den är ute skrivs alla tolv
+         modulerna på ungefär sex minuter, två per minut, och då kan täckningen nedan verifieras på
+         riktig text i stället för på plan.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="n">02</span><h2>Ger lektionerna full täckning på böckerna?</h2></div>
+    <div class="answer is-gap prose">
+      <p class="lead">Nej — inte om målet är 70 % av allt. Två papper landar helt, AMP nästan,
+         och de två tjocka böckerna långt under.</p>
+      <p>Siffrorna nedan är <em>planerad</em> täckning: vilka kapitel modulsammanfattningarna faktiskt
+         skickar dig till. Verklig täckning går att mäta först när modul 3–12 är skrivna.</p>
+    </div>
+
+    <div class="cov">
+      <div class="covrow">
+        <div class="t">Boehm<small>PLDI 2005 · 12 sidor</small></div>
+        <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
+        <div class="pct" style="color:var(--ok)">100%</div>
+      </div>
+      <div class="covrow">
+        <div class="t">ThreadSanitizer<small>WBIA 2009 · 8 sidor</small></div>
+        <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
+        <div class="pct" style="color:var(--ok)">100%</div>
+      </div>
+      <div class="covrow">
+        <div class="t">Herlihy &amp; Shavit<small>AMP · kap 2,3,5,7–16 av 18</small></div>
+        <div class="bar"><i style="width:72%;background:var(--ok)"></i></div>
+        <div class="pct" style="color:var(--ok)">~72%</div>
+      </div>
+      <div class="covrow">
+        <div class="t">Drepper<small>Memory · 114 sidor, avsnitt 2,3,6</small></div>
+        <div class="bar"><i style="width:40%;background:var(--wait)"></i></div>
+        <div class="pct" style="color:var(--wait)">~40%</div>
+      </div>
+      <div class="covrow">
+        <div class="t">McKenney<small>Is Parallel Programming Hard · ~700 sidor</small></div>
+        <div class="bar"><i style="width:16%;background:var(--gap)"></i></div>
+        <div class="pct" style="color:var(--gap)">~16%</div>
+      </div>
+    </div>
+
+    <div class="prose" style="margin-top:1.4rem">
+      <p><strong>Varför de två sista är låga är inte ett fel i planen.</strong> Drepper och McKenney är
+         referensverk på 114 respektive ~700 sidor. Modulerna citerar dem där de biter — MESI och falsk
+         delning i modul 4, RCU och återvinning i modul 9 — men ingen kurs på 19 veckor läser McKenney
+         pärm till pärm, och en plan som påstod det vore en lögn du upptäckte i november.</p>
+      <p>Ska du nå 70 % på dem behövs <strong>läsanvisningar per lektion</strong>, inte fler lektioner:
+         en förberedelse som säger vilka kapitel som ska vara lästa innan passet. Det är precis den
+         mekanism som saknas idag, och den ligger utanför den här sidan.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="n">03</span><h2>Vad är implementerat?</h2></div>
+    <p class="prose">Tre filer, plus riggen runt omkring. De är byggställning, inte kursinnehåll —
+       bygg aldrig om dem. <code>make progress</code> skriver ut samma lista ur källan.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Fil</th><th>Status</th><th>Vad den ger dig</th><th>Rader</th></tr></thead>
+      <tbody>
+        <tr><td class="f">src/core/status.c</td><td><span class="badge b-ok">klar</span></td>
+            <td class="d"><code>para_status</code>, <code>para_strerror</code>, <code>para_last_os_error</code>. En enum genom hela biblioteket, inget errno-läckage ut.</td><td class="num">36</td></tr>
+        <tr><td class="f">src/core/thread.c</td><td><span class="badge b-ok">klar</span></td>
+            <td class="d">create / join / detach, kooperativ stopp-flagga, <code>para_hardware_concurrency</code>, <code>para_thread_pin</code>, <code>yield</code>.</td><td class="num">125</td></tr>
+        <tr><td class="f">src/core/mutex.c</td><td><span class="badge b-ok">klar</span></td>
+            <td class="d"><code>para_mutex</code> och <code>para_cond</code>. Debugbygget sätter <code>PTHREAD_MUTEX_ERRORCHECK</code>.</td><td class="num">148</td></tr>
+        <tr><td class="f">sync/atomic.h</td><td><span class="badge b-ok">klar</span></td>
+            <td class="d">Header-only: <code>PARA_CACHELINE</code>, <code>PARA_ALIGNED</code>, <code>para_cpu_relax</code>, fences, <code>para_backoff</code>.</td><td class="num">—</td></tr>
+        <tr><td class="f">tests/para_test.[ch]</td><td><span class="badge b-ok">klar</span></td>
+            <td class="d">Testriggen: en process per test, watchdog, race-märkning.</td><td class="num">232</td></tr>
+        <tr><td class="f">Makefile + canary_*.c</td><td><span class="badge b-ok">klar</span></td>
+            <td class="d">Fyra byggkonfigurationer, sju verktygsmål, fyra kanariefåglar.</td><td class="num">352</td></tr>
+        <tr><td class="f">src/bench/bench.c</td><td><span class="badge b-wait">delvis</span></td>
+            <td class="d"><strong>Endast</strong> <code>para_now_ns()</code> är klar. Resten är stubb — modul 6.</td><td class="num">28</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="shead"><span class="n">04</span><h2>Finns alla header-filer? Vad kommer du bygga?</h2></div>
+    <div class="answer is-ok prose">
+      <p class="lead">Ja. Alla 21 headers finns, med 106 publika deklarationer. Inget API är ospecificerat.</p>
+      <p>Du fyller implementationer, aldrig gränssnitt. Varje header säger själv vilken modul som äger den.</p>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Header</th><th>Modul</th><th>Vad du bygger</th><th>Dekl.</th></tr></thead>
+      <tbody>
+        <tr><td class="f">sync/spinlock.h</td><td><span class="badge b-mod">M4</span></td><td class="d">TAS → TTAS → backoff → ALock → CLH → MCS bakom ett vtable</td><td class="num">5</td></tr>
+        <tr><td class="f">exec/pool.h</td><td><span class="badge b-mod">M5</span></td><td class="d">Trådpool, begränsad kö, backpressure, två avstängningslägen</td><td class="num">7</td></tr>
+        <tr><td class="f">sync/rwlock.h</td><td><span class="badge b-mod">M5</span></td><td class="d">Läsarpreferens (mät svälten) och en rättvis kövariant</td><td class="num">8</td></tr>
+        <tr><td class="f">sync/semaphore.h</td><td><span class="badge b-mod">M5</span></td><td class="d">På mutex + cond, inte på <code>sem_t</code> — predikatet är poängen</td><td class="num">6</td></tr>
+        <tr><td class="f">core/task.h</td><td><span class="badge b-mod">M5</span></td><td class="d"><code>para_future</code> med acquire/release-paret som bär resultatet</td><td class="num">4</td></tr>
+        <tr><td class="f">bench/bench.h</td><td><span class="badge b-mod">M6</span></td><td class="d">Median, p99, variationskoefficient som stoppvillkor, CSV</td><td class="num">3</td></tr>
+        <tr><td class="f">ds/set.h</td><td><span class="badge b-mod">M7</span></td><td class="d">Fem strategier: coarse, fine, optimistic, lazy, Harris/Michael</td><td class="num">6</td></tr>
+        <tr><td class="f">ds/queue.h</td><td><span class="badge b-mod">M8</span></td><td class="d">Tvålåskö, Michael–Scott med hjälpsteget, SPSC, blocking</td><td class="num">8</td></tr>
+        <tr><td class="f">ds/stack.h</td><td><span class="badge b-mod">M8</span></td><td class="d">Treiber och eliminationsstacken</td><td class="num">5</td></tr>
+        <tr><td class="f">mem/reclaim.h</td><td><span class="badge b-mod">M9</span></td><td class="d">Taggade pekare, hazard pointers, epoker. Utan den läcker allt ovan.</td><td class="num">9</td></tr>
+        <tr><td class="f">ds/hashmap.h</td><td><span class="badge b-mod">M10</span></td><td class="d">Globalt lås → striped → refinable → split-ordering</td><td class="num">6</td></tr>
+        <tr><td class="f">core/barrier.h</td><td><span class="badge b-mod">M11</span></td><td class="d">Sense-reversing, tournament, statiskt träd</td><td class="num">3</td></tr>
+        <tr><td class="f">ds/skiplist.h</td><td><span class="badge b-mod">M11</span></td><td class="d">Lock-free skiplista och prioritetskö</td><td class="num">9</td></tr>
+        <tr><td class="f">exec/scheduler.h</td><td><span class="badge b-mod">M12</span></td><td class="d">Chase–Lev work-stealing. Slutprovet.</td><td class="num">6</td></tr>
+      </tbody>
+    </table></div>
+    <p class="prose" style="margin-top:1.1rem"><strong>Tre moduler äger ingen befintlig fil.</strong>
+      M1 läser grinden. M2 skapar <code>bench/litmus.h</code> + <code>src/bench/litmus.c</code>.
+      M3 skapar egna filer i <code>src/sync/</code> för Peterson, filterlåset och bageriet —
+      studieobjekt, inte produktionslås, och därför inte i <code>spinlock.c</code>.</p>
+  </section>
+
+  <section>
+    <div class="shead"><span class="n">05</span><h2>Hur skapar du ett test för en ny grej?</h2></div>
+    <p class="prose">Lägg det i valfri <code>tests/*.c</code>. Registreringen sker via en konstruktor —
+       ingen lista att uppdatera, inget <code>main</code> att röra.</p>
+<pre><span class="c">/* tests/test_spinlock.c — ny fil, upptäcks automatiskt av Makefile */</span>
+<span class="k">#include</span> "para_test.h"
+<span class="k">#include</span> &lt;paracore.h&gt;
+
+<span class="c">/* PARA_TEST_RACE märker testet som kapplöpningskänsligt.
+   `make stress` kör BARA dessa, 200 varv, under TSan. */</span>
+PARA_TEST_RACE(mcs_last_slapper_i_fifo_ordning) {
+    para_lock *l = NULL;
+    PARA_ASSERT_OK(para_lock_init(&amp;l, PARA_LOCK_MCS, 8));
+
+    <span class="c">/* ... starta trådar, mät ordningen ... */</span>
+
+    PARA_ASSERT_EQ(observerad_ordning, forvantad);
+    para_lock_destroy(l);
+}
+</pre>
+    <ul class="plain prose">
+      <li><code>PARA_ASSERT_OK(expr)</code> — kräver <code>PARA_OK</code>, skriver ut <code>para_strerror</code> annars.</li>
+      <li><code>PARA_ASSERT_STATUS(expr, PARA_ERR_BUSY)</code> — för de förväntade felen.</li>
+      <li><code>PARA_ASSERT_NOT_BUILT_YET(expr)</code> — den som finns i <code>test_notimpl.c</code> idag.
+          När du bygger modulen <strong>faller</strong> den, och det är signalen att komma tillbaka och skriva det riktiga testet.</li>
+      <li>En deadlock blir <code>TIMEOUT</code> med testets namn efter 10 s, inte en hängd svit.
+          En krasch blir <code>SIGNAL</code> med signalnamnet. Båda tack vare en process per test.</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="shead"><span class="n">06</span><h2>Hur ser dev-loopen ut?</h2></div>
+    <ol class="loop prose" style="max-width:none">
+      <li><span class="step">01</span><div><code>make progress</code>
+        <span class="why">Vilken fil äger modulen du är på? Listan räknas fram ur källan, inte ur en README som glidit.</span></div></li>
+      <li><span class="step">02</span><div>Öppna stubben, läs headern ovanför den
+        <span class="why">Kommentaren är specen: vilka varianter, vilken ordning, och varför var och en finns.</span></div></li>
+      <li><span class="step">03</span><div>Ta bort <code>return PARA_ERR_NOTIMPL</code>, skriv den enklaste varianten
+        <span class="why">Coarse före fine. Referensen först — allt annat ska slå den, och utan den finns inget att slå.</span></div></li>
+      <li><span class="step">04</span><div><code>make test</code>
+        <span class="why">Sekunder. <code>test_notimpl.c</code> faller nu för din modul — ta bort raden, skriv ett riktigt test.</span></div></li>
+      <li><span class="step">05</span><div><code>make tsan</code> och <code>make stress</code>
+        <span class="why">Ett samtidighetstest som kördes en gång har inte bevisat något. 200 varv under TSan har det.</span></div></li>
+      <li><span class="step">06</span><div><code>make helgrind</code> vid varje nytt lås
+        <span class="why">Hittar låsordningsinversioner som aldrig inträffat under körning. Det TSan inte alltid ser.</span></div></li>
+      <li><span class="step">07</span><div><code>make asan</code> när du börjar frigöra minne
+        <span class="why">Från modul 9 och framåt är det här steget hela poängen, inte en formalitet.</span></div></li>
+      <li><span class="step">08</span><div><code>make bench</code> + mät, sedan nästa variant
+        <span class="why">Varje steg i en modul finns för att det förra mätte dåligt. Utan siffran är ordningen godtycklig.</span></div></li>
+      <li><span class="step">09</span><div><code>make check</code> före commit
+        <span class="why">fmt + test + tsan + asan + canary. Slutrubriken säger <code>ALLT GRÖNT</code> bara om varje lane faktiskt kördes.</span></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="shead"><span class="n">07</span><h2>De tre utfallen</h2></div>
+    <p class="prose">Repots enda egentliga regel om verktyg, och den har tjänat in sig fyra gånger den
+       här veckan. Ett verktyg som inte kunde köra har <strong>inte</strong> svarat "nej" — det har inte
+       kontrollerat någonting alls.</p>
+<pre><span class="g">fälld / ok            </span> verktyget kördes och gav ett svar
+<span class="k">HOPPAD / OTILLGÄNGLIG </span> verktyget kunde inte köra — orsaken skrivs ut
+<span class="r">MISSAD / FEL          </span> verktyget kördes och hittade ingenting → grinden faller</pre>
+    <p class="prose">Fyra gånger, allihop hittade genom att köra samma commit på en annan maskin:
+      <code>valgrind</code> saknades och grinden föll som om koden var trasig · helgrind
+      <em>kraschade internt</em> och såg nästan ut som en frikännande · TSan startar inte på Pi:ns
+      47-bitars VMA · <code>clang-format</code> saknades och <code>fmt-check</code> svarade
+      <strong>"FEL — kör make fmt"</strong>, alltså skyllde på koden. Den sista var värst.</p>
+  </section>
+
+  <footer>
+    <span>Paracore · github.com/Vickeviking/Paracore</span>
+    <span>genererad ur repot 2026-09-07</span>
+    <span>docs/diagrams/paracore-status.html</span>
+  </footer>
+</div>
