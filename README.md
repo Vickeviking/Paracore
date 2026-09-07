@@ -179,6 +179,7 @@ make arm     # korskompilerar om verktygskedjan finns, annars säger den hur du 
 | Maskin | Arkitektur | Kompilator | Status |
 |---|---|---|---|
 | devboxen | x86-64, 24 kärnor | gcc 16.2 **och** clang 22.1 | `make check` grönt, alla fyra kanariefåglar fällda |
+| thinkpaden | x86-64, 8 kärnor | gcc 16.2 | `make check` grönt, alla fyra fällda |
 | gunnar (Pi 5) | **aarch64**, 4 kärnor | gcc | `make all` + `make test` grönt (19/19) |
 
 Pi:n saknar valgrind och clang, så `make canary` hoppar över helgrind-steget
@@ -186,7 +187,15 @@ där — och **säger det rakt ut** i stället för att räkna det som godkänt.
 utebliven kontroll som ser ut som en grön är precis vad kanariefåglarna finns
 för att förhindra.
 
-Cachelinjen är 64 byte på båda, så `PARA_CACHELINE` stämmer. Kontrollera själv
+Kanariefåglarna har redan gjort sitt jobb en gång: repot gick grönt på
+devboxen och rött på thinkpaden, för att `make canary` skapade en tråd EFTER
+att en annan joinats — vilket får helgrind 3.25.1 att krascha internt
+(`hg_main.c:5411: Assertion 'found' failed`). Kanariefågeln är omskriven, och
+målet skiljer nu på **VERKTYGSKRASCH** och **MISSAD**: ett verktyg som dog har
+inte svarat "nej", det har inte kontrollerat någonting alls, och de två ser
+nästan likadana ut i utskriften. Kör dem på alla dina maskiner.
+
+Cachelinjen är 64 byte på alla tre, så `PARA_CACHELINE` stämmer. Kontrollera själv
 på en ny maskin:
 
 ```bash

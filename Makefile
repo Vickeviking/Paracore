@@ -200,6 +200,14 @@ canary:
 	 elif timeout 60 $(VG) --tool=helgrind --error-exitcode=42 \
 	        build/debug/canary_deadlock >/dev/null 2>build/canary_deadlock.log; \
 	      grep -qi "lock order" build/canary_deadlock.log; then echo "fälld  ✓"; \
+	 elif grep -qiE "Assertion .* failed|the .impossible. happened" build/canary_deadlock.log; then \
+	   echo "VERKTYGSKRASCH  ← helgrind dog internt. Den svarade inte 'nej'."; \
+	   echo "     En bugg i valgrind, inte i din kod — men i utskriften ser den"; \
+	   echo "     nästan ut som ett rent 'hittade inget'. Skilj alltid på de två:"; \
+	   echo "     ett verktyg som kraschade har inte kontrollerat någonting alls."; \
+	   grep -m1 -iE "Assertion .* failed|the .impossible. happened" \
+	     build/canary_deadlock.log | sed 's/^/     /'; \
+	   exit 1; \
 	 else echo "MISSAD  ← helgrind såg ingen låsordningsinversion."; \
 	   echo "     se build/canary_deadlock.log"; exit 1; fi
 	@printf '3/4  garanterad deadlock (watchdog) ..... '
