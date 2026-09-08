@@ -132,7 +132,7 @@ footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);font-
        Två av dem har obehagliga svar, och de står först.</p>
     <div class="meta">
       <span>commit 10eb1fe</span><span>21 headers · 106 publika deklarationer</span>
-      <span>96 lektioner · 19 veckor · 7 sep → 17 jan</span><span>gcc 16.2 · clang 22.1</span>
+      <span>94 lektioner · 19 veckor · 7 sep → 17 jan</span><span>gcc 16.2 · clang 22.1</span>
     </div>
   </div>
 </header>
@@ -143,19 +143,21 @@ footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);font-
     <div class="v is-ok"><b>3</b><span>filer klara</span></div>
     <div class="v is-wait"><b>14</b><span>filer du bygger</span></div>
     <div class="v is-wait"><b>58</b><span>stubbar kvar</span></div>
-    <div class="v is-ok"><b>96</b><span>lektioner skrivna</span></div>
+    <div class="v is-ok"><b>94</b><span>lektioner skrivna</span></div>
     <div class="v is-ok"><b>12 / 12</b><span>moduler klara</span></div>
-    <div class="v is-ok"><b>48</b><span>förberedelsepass</span></div>
+    <div class="v is-ok"><b>47</b><span>förberedelsepass</span></div>
     <div class="v is-ok"><b>21</b><span>headers på plats</span></div>
   </div>
 
   <section>
     <div class="shead"><span class="n">01</span><h2>Är alla lektioner genererade?</h2></div>
     <div class="answer is-ok prose">
-      <p class="lead">Ja. 96 lektioner över alla tolv moduler, noll misslyckade.</p>
-      <p>28 teorilektioner, 20 labbar och <strong>48 förberedelsepass</strong> — ett före varje
-         innehållslektion, varvat prep → lektion → prep → lektion. 661 000 tecken totalt, varav
-         283 000 är läsanvisningar.</p>
+      <p class="lead">Ja. 94 lektioner över alla tolv moduler, noll misslyckade.</p>
+      <p>28 teorilektioner, 19 labbar och <strong>47 förberedelsepass</strong> — ett före varje
+         innehållslektion, varvat prep → lektion → prep → lektion, i alla tolv modulerna.
+         654 000 tecken. Varje enskilt förberedelsepass har alla fyra delarna: primning, läs,
+         review och frågor med facit, och alla 47 märker sin läsning obligatorisk eller
+         valfri med sidantal.</p>
       <p>Regeln som stoppade det hette <em>en modul före</em>: innehållet följer takten så att ett
          spår man överger efter modul två aldrig betalar för modul nio. Den finns kvar som förval.
          Det som tillkom är en uttrycklig opt-in per spår — när ägaren redan bestämt sig ska ett
@@ -174,44 +176,45 @@ footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);font-
 
     <div class="cov">
       <div class="covrow">
-        <div class="t">Herlihy &amp; Shavit<small>AMP · 187 omnämnanden, 17 distinkta kapitel</small></div>
+        <div class="t">Herlihy &amp; Shavit<small>AMP · 182 omnämnanden, i alla 12 moduler</small></div>
         <div class="bar"><i style="width:94%;background:var(--ok)"></i></div>
         <div class="pct" style="color:var(--ok)">kap 2–16</div>
       </div>
       <div class="covrow">
-        <div class="t">McKenney<small>89 omnämnanden — kap 15, Appendix C, listings och figurer</small></div>
+        <div class="t">McKenney<small>100 omnämnanden i 11 moduler — kap 15, Appendix C, figurer</small></div>
         <div class="bar"><i style="width:72%;background:var(--ok)"></i></div>
-        <div class="pct" style="color:var(--ok)">89</div>
+        <div class="pct" style="color:var(--ok)">100</div>
       </div>
       <div class="covrow">
-        <div class="t">ThreadSanitizer<small>8 i förberedelserna, 21 totalt · artikeln är 8 sidor</small></div>
+        <div class="t">ThreadSanitizer<small>2 i förberedelserna, i modul 1 · artikeln är 8 sidor</small></div>
         <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
         <div class="pct" style="color:var(--ok)">hel</div>
       </div>
       <div class="covrow">
-        <div class="t">Drepper<small>16 omnämnanden — under bokens titel, aldrig under efternamnet</small></div>
-        <div class="bar"><i style="width:45%;background:var(--wait)"></i></div>
-        <div class="pct" style="color:var(--wait)">16</div>
+        <div class="t">Drepper<small>21 omnämnanden i 6 moduler — nu med författarnamn</small></div>
+        <div class="bar"><i style="width:55%;background:var(--ok)"></i></div>
+        <div class="pct" style="color:var(--ok)">21</div>
       </div>
       <div class="covrow">
-        <div class="t">Boehm<small>0 omnämnanden i något förberedelsepass, i någon modul</small></div>
-        <div class="bar"><i style="width:2%;background:var(--gap)"></i></div>
-        <div class="pct" style="color:var(--gap)">0</div>
+        <div class="t">Boehm<small>läs hela, 12 sidor, OBLIGATORISK — i modul 2, en gång</small></div>
+        <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
+        <div class="pct" style="color:var(--ok)">hel</div>
       </div>
     </div>
 
     <div class="prose" style="margin-top:1.4rem">
-      <p><strong>Boehm är hålet, och det är ett riktigt fynd.</strong> Noll läshänvisningar i
-         alla tolv moduler — trots att modul 2:s hela tes <em>är</em> hans artikel, och att den
-         ligger som en av spårets fem grundböcker. Den troliga orsaken: instruktionen ber om
-         <em>kapitel</em>, och en artikel på tolv sidor har inga. För ett papper i den längden är
-         rätt anvisning "läs hela", och den formuleringen finns inte i prompten.</p>
-      <p>Drepper såg först ut att saknas på samma sätt, men gör det inte: han citeras sexton
-         gånger under bokens titel och aldrig under sitt efternamn. Den första mätningen sa noll
-         för båda — skillnaden mellan de två fallen är hela skälet att mäta i stället för att gissa.</p>
-      <p>McKenney gick från ~16 % <em>planerad</em> till 89 uppmätta omnämnanden med kapitel,
-         appendix, listings och figurnummer. Det var precis den lyftningen förberedelsepassen
-         byggdes för, och den blev av.</p>
+      <p><strong>Boehm-hålet är lagat.</strong> Mätningen visade noll läshänvisningar till hans
+         artikel i alla tolv moduler — trots att modul 2:s hela tes <em>är</em> den. Orsaken var
+         konkret: instruktionen bad om <em>kapitel</em>, och en artikel på tolv sidor har inga, så
+         den föll bort. Regeln lyder nu att en källa utan kapitelindelning anvisas i sin helhet.
+         Modul 2:s andra förberedelsepass säger numera <em>"Boehm, Threads Cannot Be Implemented
+         as a Library (PLDI 2005) — läs hela, ca 12 sidor. OBLIGATORISK."</em></p>
+      <p>Och bara där. En artikel hör hemma på ett ställe; att strö in den i modul 4, 7 och 9
+         hade varit utfyllnad, inte täckning.</p>
+      <p>Drepper såg först ut att saknas på samma sätt men gjorde det inte — han citerades under
+         bokens titel och aldrig under sitt efternamn, så den första mätningen rapporterade noll
+         för honom också. Att de två fallen såg identiska ut och var helt olika saker är hela
+         skälet att mäta i stället för att gissa.</p>
     </div>
   </section>
 
