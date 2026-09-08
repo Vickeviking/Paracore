@@ -1,0 +1,341 @@
+<title>Paracore Kartan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --paper:#F1F4F7; --surface:#FFFFFF; --sunk:#E7ECF1;
+  --ink:#0F151C; --ink-2:#3D4B59; --muted:#67788A; --line:#D3DBE3;
+  --accent:#1F6F8B;
+  --s1:#DCE9EF; --s2:#B4D2DE; --s3:#7FB2C6; --s4:#3F87A4; --s5:#1B5F79;
+  --on-deep:#FFFFFF;
+  --ok:#2C7A57; --wait:#8A6410; --gap:#A6362F;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --disp:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0C1117; --surface:#141B23; --sunk:#0A0F14;
+  --ink:#E4EAF1; --ink-2:#B3C0CE; --muted:#7D8D9D; --line:#25313D;
+  --accent:#5FB3CE;
+  --s1:#16303B; --s2:#1D4C5F; --s3:#2E7391; --s4:#4F9DBB; --s5:#8CCBE0;
+  --on-deep:#08131A;
+  --ok:#63C39A; --wait:#D6A94A; --gap:#E3776D;
+}}
+:root[data-theme="dark"]{
+  --paper:#0C1117; --surface:#141B23; --sunk:#0A0F14;
+  --ink:#E4EAF1; --ink-2:#B3C0CE; --muted:#7D8D9D; --line:#25313D;
+  --accent:#5FB3CE;
+  --s1:#16303B; --s2:#1D4C5F; --s3:#2E7391; --s4:#4F9DBB; --s5:#8CCBE0;
+  --on-deep:#08131A;
+  --ok:#63C39A; --wait:#D6A94A; --gap:#E3776D;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65;
+     -webkit-font-smoothing:antialiased;padding:0 0 6rem}
+.wrap{max-width:1000px;margin:0 auto;padding:0 clamp(1rem,4vw,2.5rem)}
+.prose{max-width:66ch}
+h1,h2,.eyebrow,th{font-family:var(--disp)}
+h1{font-size:clamp(1.9rem,4.6vw,2.9rem);line-height:1.05;letter-spacing:-.022em;font-weight:700;margin:0;text-wrap:balance}
+h2{font-size:clamp(1.2rem,2.4vw,1.55rem);letter-spacing:-.014em;font-weight:600;margin:0;text-wrap:balance}
+p{margin:0 0 1rem}
+code{font-family:var(--mono);font-size:.86em;background:var(--sunk);padding:.1em .35em;border-radius:3px}
+.eyebrow{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+header.top{border-bottom:1px solid var(--line);background:var(--surface);padding:clamp(2rem,5vw,3.2rem) 0 1.8rem;margin-bottom:2.6rem}
+.top .wrap{display:flex;flex-direction:column;gap:1rem}
+.sub{font-size:1.05rem;color:var(--ink-2);max-width:60ch;margin:0}
+section{margin:3.4rem 0 0}
+.shead{display:flex;align-items:baseline;gap:.9rem;margin:0 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--line)}
+.shead .n{font-family:var(--mono);font-size:.78rem;color:var(--accent);font-weight:700}
+figure{margin:0 0 1.2rem;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+       padding:1.2rem clamp(.7rem,2vw,1.4rem) .9rem;overflow-x:auto}
+figure svg{display:block;max-width:100%;height:auto;margin:0 auto}
+figcaption{font-size:.86rem;color:var(--muted);margin-top:.9rem;padding-top:.7rem;border-top:1px solid var(--line);max-width:70ch}
+figcaption b{color:var(--ink-2);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:.78rem;margin:0}
+th{font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;
+   text-align:right;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
+th:first-child{text-align:left}
+td{padding:.32rem .5rem;border-bottom:1px solid var(--line);text-align:right;
+   font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+td:first-child{text-align:left;color:var(--ink)}
+details{margin:0 0 1rem;font-size:.9rem}
+summary{cursor:pointer;color:var(--accent);font-family:var(--disp);font-size:.85rem;font-weight:600}
+.tw{overflow-x:auto;margin-top:.8rem}
+footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-family:var(--mono);
+       font-size:.72rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.4rem 1.4rem}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <span class="eyebrow">Paracore · tre kartor · 8 september 2026</span>
+    <h1>Beroendena, böckerna och de nitton veckorna</h1>
+    <p class="sub">Tre saker som inte går att se i en textlista: vilken väg beroendena får peka,
+       vilken bok varje modul faktiskt skickar dig till, och var kalendern tar slut.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <div class="shead"><span class="n">01</span><h2>Beroenderiktningen</h2></div>
+  <p class="prose">Regeln är en rad lång och den är den enda arkitekturregeln repot har:
+     <strong>pilarna får bara peka nedåt.</strong> <code>ds/</code> får använda
+     <code>mem/</code> och <code>sync/</code>; ingen av dem får någonsin nämna
+     <code>ds/</code>. Bygget fäller ett brott.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 470" role="img" aria-label="Fem lager staplade: core underst, sedan sync, mem, ds och exec överst. Pilar pekar bara nedåt, från högre lager till lägre. bench står vid sidan och mäter alla lager.">
+      <defs>
+        <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+        <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--gap)"/>
+        </marker>
+      </defs>
+
+      <!-- exec -->
+      <rect x="130" y="18" width="330" height="56" rx="4" fill="var(--sunk)" stroke="currentColor" stroke-width="1"/>
+      <text x="146" y="40" font-family="var(--mono)" font-size="13" font-weight="700" fill="currentColor">exec/</text>
+      <text x="146" y="60" font-family="var(--mono)" font-size="11" fill="var(--muted)">pool.h · M5    scheduler.h · M12</text>
+
+      <!-- ds -->
+      <rect x="130" y="106" width="330" height="56" rx="4" fill="var(--sunk)" stroke="currentColor" stroke-width="1"/>
+      <text x="146" y="128" font-family="var(--mono)" font-size="13" font-weight="700" fill="currentColor">ds/</text>
+      <text x="146" y="148" font-family="var(--mono)" font-size="11" fill="var(--muted)">set·M7  stack/queue·M8  hashmap·M10  skiplist·M11</text>
+
+      <!-- mem -->
+      <rect x="130" y="194" width="330" height="56" rx="4" fill="var(--surface)" stroke="var(--gap)" stroke-width="2"/>
+      <text x="146" y="216" font-family="var(--mono)" font-size="13" font-weight="700" fill="var(--gap)">mem/</text>
+      <text x="146" y="236" font-family="var(--mono)" font-size="11" fill="var(--muted)">reclaim.h · M9 — hazard pointers, epoker</text>
+
+      <!-- sync -->
+      <rect x="130" y="282" width="330" height="56" rx="4" fill="var(--sunk)" stroke="currentColor" stroke-width="1"/>
+      <text x="146" y="304" font-family="var(--mono)" font-size="13" font-weight="700" fill="currentColor">sync/</text>
+      <text x="146" y="324" font-family="var(--mono)" font-size="11" fill="var(--muted)">atomic.h KLAR  spinlock·M4  rwlock/semaphore·M5</text>
+
+      <!-- core -->
+      <rect x="130" y="370" width="330" height="56" rx="4" fill="var(--sunk)" stroke="currentColor" stroke-width="1"/>
+      <text x="146" y="392" font-family="var(--mono)" font-size="13" font-weight="700" fill="currentColor">core/</text>
+      <text x="146" y="412" font-family="var(--mono)" font-size="11" fill="var(--muted)">status/thread/mutex KLAR  barrier·M11  task·M5</text>
+
+      <!-- nedåtpilar -->
+      <g stroke="currentColor" stroke-width="1.5" fill="none" color="currentColor">
+        <line x1="200" y1="74" x2="200" y2="100" marker-end="url(#a)"/>
+        <line x1="200" y1="250" x2="200" y2="276" marker-end="url(#a)"/>
+        <line x1="200" y1="338" x2="200" y2="364" marker-end="url(#a)"/>
+      </g>
+      <line x1="200" y1="162" x2="200" y2="188" stroke="var(--gap)" stroke-width="2.5" fill="none" marker-end="url(#ac)"/>
+
+      <text x="212" y="92" font-size="11" fill="var(--muted)" font-family="var(--mono)">får bero på</text>
+      <text x="212" y="180" font-size="11" fill="var(--gap)" font-family="var(--mono)" font-weight="700">måste bero på</text>
+      <text x="212" y="268" font-size="11" fill="var(--muted)" font-family="var(--mono)">får bero på</text>
+      <text x="212" y="356" font-size="11" fill="var(--muted)" font-family="var(--mono)">får bero på</text>
+
+      <!-- förbjuden riktning -->
+      <path d="M470 224 C 530 224, 530 130, 470 130" stroke="var(--gap)" stroke-width="1.5"
+            fill="none" stroke-dasharray="5 4"/>
+      <line x1="497" y1="163" x2="513" y2="191" stroke="var(--gap)" stroke-width="2.5"/>
+      <line x1="513" y1="163" x2="497" y2="191" stroke="var(--gap)" stroke-width="2.5"/>
+      <text x="536" y="172" font-size="11" fill="var(--gap)" font-family="var(--mono)">aldrig</text>
+      <text x="536" y="188" font-size="11" fill="var(--gap)" font-family="var(--mono)">uppåt</text>
+
+      <!-- bench vid sidan -->
+      <rect x="18" y="194" width="92" height="56" rx="4" fill="var(--surface)" stroke="currentColor"
+            stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="30" y="216" font-family="var(--mono)" font-size="12" font-weight="700" fill="currentColor">bench/</text>
+      <text x="30" y="236" font-family="var(--mono)" font-size="10" fill="var(--muted)">M6</text>
+      <g stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" fill="none" color="var(--muted)">
+        <line x1="110" y1="212" x2="126" y2="150"/>
+        <line x1="110" y1="222" x2="126" y2="222"/>
+        <line x1="110" y1="232" x2="126" y2="310"/>
+      </g>
+      <text x="18" y="270" font-size="10" fill="var(--muted)" font-family="var(--mono)">mäter allt</text>
+    </svg>
+    <figcaption><b>Den röda pilen är den som kostar.</b> Utan <code>mem/</code> är varje lock-free
+      struktur i <code>ds/</code> antingen ett minnesläckage eller en use-after-free — ingen tredje
+      möjlighet. Det är därför modul 9 ligger mitt i period 2 och inte sist.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="shead"><span class="n">02</span><h2>Vilken bok varje modul skickar dig till</h2></div>
+  <p class="prose">Räknat i de 47 förberedelsepassen — alltså i de faktiska läsanvisningarna, inte i
+     planen. Mörkare ruta = fler hänvisningar.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 330" role="img" aria-label="Matris med tolv moduler i rader och fem böcker i kolumner. AMP och McKenney är citerade i nästan varje modul; Drepper i sex; Boehm bara i modul 2; ThreadSanitizer bara i modul 2.">
+      <g font-family="var(--mono)" font-size="10" fill="var(--muted)">
+        <text x="96" y="26" text-anchor="middle">AMP</text>
+        <text x="196" y="26" text-anchor="middle">McKenney</text>
+        <text x="296" y="26" text-anchor="middle">Drepper</text>
+        <text x="396" y="26" text-anchor="middle">Boehm</text>
+        <text x="496" y="26" text-anchor="middle">TSan</text>
+      </g>
+      <g font-family="var(--mono)" font-size="10" fill="var(--muted)">
+        <text x="600" y="26">modulens ämne</text>
+      </g>
+
+      <!-- rader -->
+      <g font-family="var(--mono)" font-size="11">
+        <text x="8" y="49" fill="currentColor">M1</text><text x="8" y="72" fill="currentColor">M2</text>
+        <text x="8" y="95" fill="currentColor">M3</text><text x="8" y="118" fill="currentColor">M4</text>
+        <text x="8" y="141" fill="currentColor">M5</text><text x="8" y="164" fill="currentColor">M6</text>
+        <text x="8" y="187" fill="currentColor">M7</text><text x="8" y="210" fill="currentColor">M8</text>
+        <text x="8" y="233" fill="currentColor">M9</text><text x="8" y="256" fill="currentColor">M10</text>
+        <text x="8" y="279" fill="currentColor">M11</text><text x="8" y="302" fill="currentColor">M12</text>
+      </g>
+
+      <!-- celler: x=46+100*kol, y=34+23*rad, 96x19 -->
+      <g stroke="var(--line)" stroke-width="1">
+        <rect x="46"  y="34" width="96" height="19" fill="var(--s2)"><title>M1 · AMP: 10</title></rect>
+        <rect x="146" y="34" width="96" height="19" fill="var(--s2)"><title>M1 · McKenney: 8</title></rect>
+        <rect x="246" y="34" width="96" height="19" fill="var(--s1)"><title>M1 · Drepper: 6</title></rect>
+        <rect x="346" y="34" width="96" height="19" fill="var(--surface)"><title>M1 · Boehm: 0</title></rect>
+        <rect x="446" y="34" width="96" height="19" fill="var(--surface)"><title>M1 · TSan: 0</title></rect>
+
+        <rect x="46"  y="57" width="96" height="19" fill="var(--s2)"><title>M2 · AMP: 7</title></rect>
+        <rect x="146" y="57" width="96" height="19" fill="var(--s4)"><title>M2 · McKenney: 21</title></rect>
+        <rect x="246" y="57" width="96" height="19" fill="var(--s1)"><title>M2 · Drepper: 5</title></rect>
+        <rect x="346" y="57" width="96" height="19" fill="var(--s2)"><title>M2 · Boehm: 6 — läs hela, 12 sidor</title></rect>
+        <rect x="446" y="57" width="96" height="19" fill="var(--s1)"><title>M2 · TSan: 2</title></rect>
+
+        <rect x="46"  y="80" width="96" height="19" fill="var(--s4)"><title>M3 · AMP: 23</title></rect>
+        <rect x="146" y="80" width="96" height="19" fill="var(--s1)"><title>M3 · McKenney: 3</title></rect>
+        <rect x="246" y="80" width="96" height="19" fill="var(--s1)"><title>M3 · Drepper: 2</title></rect>
+        <rect x="346" y="80" width="96" height="19" fill="var(--surface)"/><rect x="446" y="80" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="103" width="96" height="19" fill="var(--s3)"><title>M4 · AMP: 12</title></rect>
+        <rect x="146" y="103" width="96" height="19" fill="var(--surface)"><title>M4 · McKenney: 0</title></rect>
+        <rect x="246" y="103" width="96" height="19" fill="var(--s1)"><title>M4 · Drepper: 5 — cachen är hans kapitel</title></rect>
+        <rect x="346" y="103" width="96" height="19" fill="var(--surface)"/><rect x="446" y="103" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="126" width="96" height="19" fill="var(--s1)"><title>M5 · AMP: 1</title></rect>
+        <rect x="146" y="126" width="96" height="19" fill="var(--s2)"><title>M5 · McKenney: 10</title></rect>
+        <rect x="246" y="126" width="96" height="19" fill="var(--s1)"><title>M5 · Drepper: 1</title></rect>
+        <rect x="346" y="126" width="96" height="19" fill="var(--surface)"/><rect x="446" y="126" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="149" width="96" height="19" fill="var(--s4)"><title>M6 · AMP: 23</title></rect>
+        <rect x="146" y="149" width="96" height="19" fill="var(--s2)"><title>M6 · McKenney: 7</title></rect>
+        <rect x="246" y="149" width="96" height="19" fill="var(--surface)"/><rect x="346" y="149" width="96" height="19" fill="var(--surface)"/><rect x="446" y="149" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="172" width="96" height="19" fill="var(--s3)"><title>M7 · AMP: 15</title></rect>
+        <rect x="146" y="172" width="96" height="19" fill="var(--s1)"><title>M7 · McKenney: 3</title></rect>
+        <rect x="246" y="172" width="96" height="19" fill="var(--surface)"/><rect x="346" y="172" width="96" height="19" fill="var(--surface)"/><rect x="446" y="172" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="195" width="96" height="19" fill="var(--s4)"><title>M8 · AMP: 21</title></rect>
+        <rect x="146" y="195" width="96" height="19" fill="var(--s1)"><title>M8 · McKenney: 5</title></rect>
+        <rect x="246" y="195" width="96" height="19" fill="var(--surface)"/><rect x="346" y="195" width="96" height="19" fill="var(--surface)"/><rect x="446" y="195" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="218" width="96" height="19" fill="var(--s2)"><title>M9 · AMP: 9</title></rect>
+        <rect x="146" y="218" width="96" height="19" fill="var(--s2)"><title>M9 · McKenney: 6 — RCU och återvinning</title></rect>
+        <rect x="246" y="218" width="96" height="19" fill="var(--surface)"/><rect x="346" y="218" width="96" height="19" fill="var(--surface)"/><rect x="446" y="218" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="241" width="96" height="19" fill="var(--s5)"><title>M10 · AMP: 28 — flest i hela spåret</title></rect>
+        <rect x="146" y="241" width="96" height="19" fill="var(--s4)"><title>M10 · McKenney: 23</title></rect>
+        <rect x="246" y="241" width="96" height="19" fill="var(--s1)"><title>M10 · Drepper: 2</title></rect>
+        <rect x="346" y="241" width="96" height="19" fill="var(--surface)"/><rect x="446" y="241" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="264" width="96" height="19" fill="var(--s3)"><title>M11 · AMP: 14</title></rect>
+        <rect x="146" y="264" width="96" height="19" fill="var(--s1)"><title>M11 · McKenney: 4</title></rect>
+        <rect x="246" y="264" width="96" height="19" fill="var(--surface)"/><rect x="346" y="264" width="96" height="19" fill="var(--surface)"/><rect x="446" y="264" width="96" height="19" fill="var(--surface)"/>
+
+        <rect x="46"  y="287" width="96" height="19" fill="var(--s4)"><title>M12 · AMP: 19</title></rect>
+        <rect x="146" y="287" width="96" height="19" fill="var(--s2)"><title>M12 · McKenney: 10</title></rect>
+        <rect x="246" y="287" width="96" height="19" fill="var(--surface)"/><rect x="346" y="287" width="96" height="19" fill="var(--surface)"/><rect x="446" y="287" width="96" height="19" fill="var(--surface)"/>
+      </g>
+
+      <!-- ämnesetiketter -->
+      <g font-family="var(--mono)" font-size="9.5" fill="var(--muted)">
+        <text x="556" y="48">grinden</text><text x="556" y="71">minnesmodellen</text>
+        <text x="556" y="94">ömsesidig uteslutning</text><text x="556" y="117">lås och cache</text>
+        <text x="556" y="140">monitorer, pool</text><text x="556" y="163">mätriggen</text>
+        <text x="556" y="186">listor</text><text x="556" y="209">köer, stackar</text>
+        <text x="556" y="232">minnesåtervinning</text><text x="556" y="255">hashtabeller</text>
+        <text x="556" y="278">skiplistor</text><text x="556" y="301">slutprovet</text>
+      </g>
+    </svg>
+    <figcaption><b>Två böcker bär kursen, tre är punktinsatser.</b> AMP och McKenney citeras i
+      tolv respektive elva moduler. Drepper hör till cachen — modul 1, 2, 4, 5, 10. Boehm och
+      ThreadSanitizer förekommer i <em>en</em> modul var, och ska göra det: en artikel på tolv
+      respektive åtta sidor läses en gång, på det ställe där den betyder något.</figcaption>
+  </figure>
+
+  <details>
+    <summary>Samma siffror som tabell</summary>
+    <div class="tw"><table>
+      <thead><tr><th>Modul</th><th>AMP</th><th>McKenney</th><th>Drepper</th><th>Boehm</th><th>TSan</th></tr></thead>
+      <tbody>
+        <tr><td>M1 grinden</td><td>10</td><td>8</td><td>6</td><td>0</td><td>0</td></tr>
+        <tr><td>M2 minnesmodellen</td><td>7</td><td>21</td><td>5</td><td>6</td><td>2</td></tr>
+        <tr><td>M3 ömsesidig uteslutning</td><td>23</td><td>3</td><td>2</td><td>0</td><td>0</td></tr>
+        <tr><td>M4 lås och cache</td><td>12</td><td>0</td><td>5</td><td>0</td><td>0</td></tr>
+        <tr><td>M5 monitorer, pool</td><td>1</td><td>10</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td>M6 mätriggen</td><td>23</td><td>7</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M7 listor</td><td>15</td><td>3</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M8 köer, stackar</td><td>21</td><td>5</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M9 minnesåtervinning</td><td>9</td><td>6</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M10 hashtabeller</td><td>28</td><td>23</td><td>2</td><td>0</td><td>0</td></tr>
+        <tr><td>M11 skiplistor</td><td>14</td><td>4</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M12 slutprovet</td><td>19</td><td>10</td><td>0</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table></div>
+  </details>
+</section>
+
+<section>
+  <div class="shead"><span class="n">03</span><h2>De nitton veckorna</h2></div>
+  <p class="prose">Kedjan lagrar inga datum — de räknas ur projektets start plus modulernas längd.
+     Flyttar du en modul skiftar allt efter den, och den här bilden ändrar sig med.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 330" role="img" aria-label="Tidslinje över nitton veckor. Modul 1 till 6 ligger i period 1 fram till 1 november, modul 7 till 12 i period 2 fram till 17 januari. Jul och nyår faller i vecka 16 och 17, som är modul 11.">
+      <!-- julband -->
+      <rect x="382" y="34" width="66" height="252" fill="var(--sunk)"/>
+      <text x="415" y="26" font-family="var(--mono)" font-size="9.5" fill="var(--muted)" text-anchor="middle">jul / nyår</text>
+
+      <!-- veckoskala -->
+      <g font-family="var(--mono)" font-size="9" fill="var(--muted)">
+        <text x="52" y="302">v1</text><text x="184" y="302">v5</text><text x="316" y="302">v9</text>
+        <text x="448" y="302">v13</text><text x="580" y="302">v17</text>
+        <text x="46" y="316">7 sep</text><text x="290" y="316">2 nov</text><text x="380" y="316">21 dec</text>
+        <text x="620" y="316">17 jan</text>
+      </g>
+      <line x1="46" y1="290" x2="646" y2="290" stroke="var(--line)" stroke-width="1"/>
+
+      <!-- periodgräns efter v8 -->
+      <line x1="310" y1="20" x2="310" y2="290" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="316" y="16" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--accent)">period 2 · 1DL590</text>
+      <text x="304" y="16" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--accent)" text-anchor="end">period 1 · 1DL530</text>
+
+      <!-- staplar: x=46+33*(startvecka-1), bredd=33*veckor-3 -->
+      <g>
+        <rect x="46"  y="34"  width="30"  height="17" rx="2" fill="var(--s3)"/><text x="82"  y="47" font-family="var(--mono)" font-size="10" fill="currentColor">M1 grinden</text>
+        <rect x="79"  y="55"  width="63"  height="17" rx="2" fill="var(--s3)"/><text x="148" y="68" font-family="var(--mono)" font-size="10" fill="currentColor">M2 minnesmodellen</text>
+        <rect x="145" y="76"  width="30"  height="17" rx="2" fill="var(--s3)"/><text x="181" y="89" font-family="var(--mono)" font-size="10" fill="currentColor">M3 ömsesidig uteslutning</text>
+        <rect x="178" y="97"  width="63"  height="17" rx="2" fill="var(--s3)"/><text x="247" y="110" font-family="var(--mono)" font-size="10" fill="currentColor">M4 lås och cache</text>
+        <rect x="244" y="118" width="30"  height="17" rx="2" fill="var(--s3)"/><text x="280" y="131" font-family="var(--mono)" font-size="10" fill="currentColor">M5 monitorer, trådpoolen</text>
+        <rect x="277" y="139" width="30"  height="17" rx="2" fill="var(--s3)"/><text x="313" y="152" font-family="var(--mono)" font-size="10" fill="currentColor">M6 mätriggen · P1-provet</text>
+
+        <rect x="310" y="160" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="379" y="173" font-family="var(--mono)" font-size="10" fill="currentColor">M7 listor</text>
+        <rect x="376" y="181" width="30"  height="17" rx="2" fill="var(--s5)"/><text x="412" y="194" font-family="var(--mono)" font-size="10" fill="currentColor">M8 köer, stackar</text>
+        <rect x="409" y="202" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="478" y="215" font-family="var(--mono)" font-size="10" fill="currentColor">M9 minnesåtervinning</text>
+        <rect x="475" y="223" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="544" y="236" font-family="var(--mono)" font-size="10" fill="currentColor">M10 hashtabeller</text>
+        <rect x="541" y="244" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="610" y="257" font-family="var(--mono)" font-size="10" fill="currentColor">M11 skiplistor</text>
+        <rect x="607" y="265" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="607" y="278" font-family="var(--mono)" font-size="10" fill="currentColor" text-anchor="end">M12 slutprovet  </text>
+      </g>
+    </svg>
+    <figcaption><b>Modul 11 är den som ligger över julen, och det är avsiktligt.</b> Skiplistor,
+      prioritetsköer och barriärer är många små avgränsade implementationer — den enda modulen som
+      tål halv takt. Sista veckan slutar 17 januari, samma dag som period 2.</figcaption>
+  </figure>
+</section>
+
+<footer>
+  <span>Paracore · github.com/Vickeviking/Paracore</span>
+  <span>siffrorna räknade ur spårets API 8 sep 2026</span>
+  <span>docs/diagrams/paracore-kartan.html</span>
+</footer>
+</div>
