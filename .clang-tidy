@@ -3,6 +3,11 @@
 # Vi bryr oss om samtidighet och om buggar som sanitizern bara ser om den
 # råkar köra rätt interleaving. Stilcheckarna är avstängda; .clang-format
 # äger stilen.
+#
+# C++-specifikt jämfört med C-versionen: cppcoreguidelines och modernize är
+# på, men hårt trimmade. De två som faktiskt tjänar in sig här är
+# cppcoreguidelines-avoid-non-const-global-variables (kanariefåglarna får
+# undantag) och modernize-use-nullptr.
 Checks: >
   -*,
   bugprone-*,
@@ -11,10 +16,16 @@ Checks: >
   cert-*,
   misc-*,
   performance-*,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-equals-default,
+  cppcoreguidelines-pro-type-member-init,
+  cppcoreguidelines-slicing,
   readability-inconsistent-declaration-parameter-name,
   -bugprone-easily-swappable-parameters,
   -misc-include-cleaner,
+  -misc-non-private-member-variables-in-classes,
   -cert-dcl37-c,
   -cert-dcl51-cpp
 WarningsAsErrors: 'concurrency-*,bugprone-signal-handler,clang-analyzer-core.*'
-HeaderFilterRegex: '(core|sync|exec|ds|mem|bench|include)/.*\.h$'
+HeaderFilterRegex: '(core|sync|exec|ds|mem|bench|include)/.*\.hpp$'

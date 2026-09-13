@@ -1,9 +1,21 @@
+# Paracore — stilen. clang-format äger den, .clang-tidy äger resten.
+Language: Cpp
 BasedOnStyle: LLVM
+Standard: c++20
 IndentWidth: 4
 ColumnLimit: 100
 AlignAfterOpenBracket: Align
-AllowShortFunctionsOnASingleLine: None
+AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
 BreakBeforeBraces: Attach
 PointerAlignment: Right
+ReferenceAlignment: Right
 SortIncludes: false
+AccessModifierOffset: -4
+EmptyLineBeforeAccessModifier: LogicalBlock
+FixNamespaceComments: true
+NamespaceIndentation: None
+PackConstructorInitializers: NextLine
+SeparateDefinitionBlocks: Leave
+ReflowComments: false
+# Prosan i huvudkommentarerna är handsatt och bär kursinnehållet.
