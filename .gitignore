@@ -6,3 +6,8 @@ compile_commands.json
 perf.data*
 callgrind.out.*
 .cache/
+
+# Lekplatsens skräplåda: allt utom .gitkeep. Filerna byggs av `make` precis
+# som resten av playground/, men de committas aldrig — det är hela skillnaden.
+playground/scratch/*
+!playground/scratch/.gitkeep

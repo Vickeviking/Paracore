@@ -105,10 +105,14 @@ CANARY_BIN := $(CANARY_SRC:tests/canary_%.cpp=$(BUILD)/canary_%)
 
 PROBE_SRC := $(wildcard tests/probe_*.cpp)
 
-PLAY_SRC := $(wildcard playground/*.cpp)
+# Både playground/ och dess git-ignorerade skräplåda. Att scratch/ inte
+# committas får inte betyda att den inte byggs — en fil som kompilerar sämre
+# för att den ligger i fel mapp är precis den sortens överraskning en lekplats
+# ska vara fri från.
+PLAY_SRC := $(wildcard playground/*.cpp) $(wildcard playground/scratch/*.cpp)
 PLAY_BIN := $(PLAY_SRC:playground/%.cpp=$(BUILD)/play_%)
 
-.PHONY: all lib tests play run test tsan tsan-run asan valgrind helgrind drd \
+.PHONY: all lib tests play run new list test tsan tsan-run asan asan-run valgrind helgrind drd \
         canary canary-watchdog lockfree stress bench check fmt fmt-check tidy \
         compile_commands _cc_fallback progress arm clean distclean help
 
@@ -198,6 +202,75 @@ tsan: $(BUILD)/.tsan-works
 tsan-run:
 	@$(MAKE) --no-print-directory MODE=tsan build/tsan/play_$(PROG)
 	@TSAN_OPTIONS="$(TSAN_OPTIONS)" build/tsan/play_$(PROG) $(ARGS)
+
+# Fanns inte förrän lekplatsen fick sin egen README: `tsan-run` hade ingen
+# motsvarighet för minnesfel, så ett experiment som läckte eller läste fritt
+# minne gick bara att köra genom testsviten — dit experiment inte hör hemma.
+asan-run:
+	@$(MAKE) --no-print-directory MODE=asan build/asan/play_$(PROG)
+	@ASAN_OPTIONS="$(ASAN_OPTIONS)" UBSAN_OPTIONS="$(UBSAN_OPTIONS)" \
+	  build/asan/play_$(PROG) $(ARGS)
+
+# ── lekplatsen ────────────────────────────────────────────────────────────
+#
+# `make new PROG=x` skriver playground/x.cpp från en mall som redan har rätt
+# include, rätt namnrymd och en körbar main(). Friktionen den tar bort är inte
+# tangenttryckningarna utan FRÅGAN: "vad hette headern nu igen?" — och den
+# frågan är nog för att ett infall inte blir ett experiment.
+#
+# Den skriver ALDRIG över en fil som finns. Ett experiment du glömt bort är
+# fortfarande ditt arbete, och `make new` på ett upptaget namn är nästan
+# alltid ett stavfel.
+new:
+	@test -n "$(PROG)" || { echo "ange namn:  make new PROG=minlek"; exit 1; }
+	@case "$(PROG)" in */*) echo "namnet får inte innehålla /"; exit 1;; esac
+	@if [ -e playground/$(PROG).cpp ]; then \
+	   echo "playground/$(PROG).cpp finns redan — jag rör den inte."; \
+	   echo "kör:  make run PROG=$(PROG)"; exit 1; \
+	 fi
+	@printf '%s\n' \
+	  '/* playground/$(PROG).cpp' \
+	  ' *' \
+	  ' *     make run PROG=$(PROG)        # bygg och kör' \
+	  ' *     make tsan-run PROG=$(PROG)   # under ThreadSanitizer' \
+	  ' *     make asan-run PROG=$(PROG)   # under ASan + UBSan' \
+	  ' */' \
+	  '#include <paracore.hpp>' \
+	  '' \
+	  '#include <print>' \
+	  '#include <thread>' \
+	  '#include <vector>' \
+	  '' \
+	  'int main() {' \
+	  '    std::println("$(PROG) — {} hårdvarutrådar", para::hardware_concurrency());' \
+	  '' \
+	  '    std::vector<std::jthread> workers;' \
+	  '    for (unsigned i = 0; i < 4; ++i) {' \
+	  '        workers.emplace_back([i](std::stop_token stop) {' \
+	  '            if (stop.stop_requested()) return;' \
+	  '            std::println("  tråd {} här", i);' \
+	  '        });' \
+	  '    }' \
+	  '    /* jthread joinar i sin destruktor — ingen explicit join behövs. */' \
+	  '    return 0;' \
+	  '}' \
+	  > playground/$(PROG).cpp
+	@echo "skapade playground/$(PROG).cpp"
+	@echo "kör:  make run PROG=$(PROG)"
+
+list:
+	@echo "══ playground/ ══════════════════════════════════════════════════"
+	@echo
+	@for f in $(PLAY_SRC); do \
+	   n=$${f#playground/}; n=$${n%.cpp}; \
+	   d=$$(sed -n '1s@^/\* *playground/[^ ]*\.cpp *—* *@@p' $$f); \
+	   printf "  %-22s %s\n" "$$n" "$$d"; \
+	 done
+	@echo
+	@echo "  make run PROG=<namn>      kör    (även tsan-run / asan-run / bench)"
+	@echo "  make new PROG=<namn>      skapa en ny från mall"
+	@echo
+	@echo "  playground/scratch/ byggs men committas aldrig — läs playground/README.md"
 
 # ASan + UBSan: use-after-free, buffertöverskridningar, läckor, UB.
 asan:
@@ -490,6 +563,12 @@ help:
 	@echo "    make run              kör playground/hello.cpp"
 	@echo "    make run PROG=counter kör playground/counter.cpp"
 	@echo "    make run PROG=falsesharing ARGS=8"
+	@echo
+	@echo "  LEKPLATSEN  (playground/ — se playground/README.md)"
+	@echo "    make list             vad som ligger där"
+	@echo "    make new PROG=minlek  skapa playground/minlek.cpp från mall"
+	@echo "    make tsan-run PROG=x  kör experimentet under ThreadSanitizer"
+	@echo "    make asan-run PROG=x  kör det under ASan + UBSan"
 	@echo
 	@echo "  TESTA"
 	@echo "    make test             testsviten, watchdog fångar deadlocks"
