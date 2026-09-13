@@ -278,11 +278,13 @@ make arm     # korskompilerar om verktygskedjan finns, annars säger den hur du 
 
 ## Verifierat på
 
+Alla tre kördes 13 september 2026 på commit `a1fcb76`, 27 tester i sviten.
+
 | Maskin | Arkitektur | Kompilator | Status |
 |---|---|---|---|
 | devboxen | x86-64, 24 kärnor | g++ 16.2 **och** clang++ 22.1 | `ALLT GRÖNT` — varje lane kördes |
-| thinkpaden | x86-64, 8 kärnor | g++ 16.2, clang++ | *(se nedan)* |
-| gunnar (Pi 5) | **aarch64**, 4 kärnor | g++ 14.2 | `GRÖNT SÅ LÅNGT MASKINEN RÄCKER` |
+| thinkpaden | x86-64, 8 kärnor | g++ 16.2 | `ALLT GRÖNT` — varje lane kördes |
+| gunnar (Pi 5) | **aarch64**, 4 kärnor | g++ 14.2 | `GRÖNT SÅ LÅNGT MASKINEN RÄCKER` — se nedan |
 
 Pi:n saknar `clang-format` och `valgrind`, och ThreadSanitizer **finns** i dess
 gcc men vägrar starta: kärnan ger 47-bitars VMA och TSan stöder 39, 42 och 48.
