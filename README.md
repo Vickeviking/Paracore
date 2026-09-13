@@ -202,49 +202,55 @@ Det fulla resonemanget, inklusive det som valdes bort, ligger i
 
 ## Modulerna
 
+Elva moduler, 20 veckor. **Den gamla modul 1 — repot, grinden och
+kanariefåglarna — är borttagen:** den är byggd, den står i den här filen, och
+Viktor 13/9 ville *"börja med implementationer o sådant direkt"*.
+
+Varje modul namnger sina **konkreta leveranser**, för det är dem
+lektionsgeneratorn räknar när den fördelar labbar — en labb per leverans.
+Fulla beskrivningar: [`docs/arcturon-sparstruktur.md`](docs/arcturon-sparstruktur.md).
+
 **Period 1 — grunden** *(31 aug – 1 nov, med 1DL530)*
 
-| # | Modul | Fyller |
-|---|---|---|
-| 1 | Monorepot som en bevisapparat | Makefile, `tests/`, de fem kanariefåglarna |
-| 2 | C++-minnesmodellen, mätt och inte trodd | `sync/atomic.hpp`, litmusriggen |
-| 3 | Ömsesidig uteslutning som bevis | Peterson, filter, bageri |
-| 4 | Spinlås, kontention och cachen | `sync/spinlock.hpp` — sex lås |
-| 5 | Monitorer, rättvisa och trådpoolen | `exec/pool.hpp`, `sync/rwlock.hpp`, `core/task.hpp` |
-| 6 | Riggen: att mäta så siffran betyder något | `bench/bench.hpp` |
+| # | v | Modul | Fyller |
+|---|---|---|---|
+| 1 | 2 | Minnesmodellen, mätt och inte trodd | `sync/atomic.hpp`, litmusriggen, `make lockfree` |
+| 2 | 1 | Ömsesidig uteslutning, byggd ur atomics | Peterson, filter, bageri |
+| 3 | 2 | Spinlås, kontention och cachen | `sync/spinlock.hpp` — sex lås + `AnyLock` |
+| 4 | 2 | Monitorer, rättvisa och trådpoolen | `sync/rwlock.hpp`, `sync/semaphore.hpp`, `core/task.hpp`, `exec/pool.hpp` |
+| 5 | 1 | Mätriggen | `bench/bench.hpp` |
 
 **Period 2 — datastrukturerna** *(2 nov – 17 jan, med 1DL590)*
 
-| # | Modul | Fyller |
-|---|---|---|
-| 7 | Listor: fem synkroniseringsstrategier | `ds/set.hpp` |
-| 8 | Köer, stackar och elimination | `ds/queue.hpp`, `ds/stack.hpp` |
-| 9 | Minnesåtervinning: ABA, hazard pointers | `mem/reclaim.hpp` |
-| 10 | Hashtabeller: från ett lås till split-ordering | `ds/hashmap.hpp` |
-| 11 | Skiplistor, prioritetsköer, barriärer | `ds/skiplist.hpp`, `core/barrier.hpp` |
-| 12 | Slutprovet: work-stealing-schemaläggare | `exec/scheduler.hpp` |
+| # | v | Modul | Fyller |
+|---|---|---|---|
+| 6 | 2 | Mängder: fem synkroniseringsstrategier | `ds/set.hpp` |
+| 7 | 2 | Köer, stackar och elimination | `ds/queue.hpp`, `ds/stack.hpp` |
+| 8 | 2 | Minnesåtervinning: ABA, hazard pointers, epoker | `mem/reclaim.hpp` |
+| 9 | 2 | Hashtabeller: från ett lås till split-ordering | `ds/hashmap.hpp` |
+| 10 | 2 | Skiplistor, prioritetsköer och barriärer | `ds/skiplist.hpp`, `core/barrier.hpp` |
+| 11 | 2 | Slutprovet: work-stealing-schemaläggare | `exec/scheduler.hpp` |
 
-Modulernas fulla beskrivningar, lektioner och labbar ligger i Arcturon under
-projektet *Parallellverkstan*.
+Lektionerna och labbarna genereras i Arcturon under projektet
+*Parallellverkstan*; styrningen ligger i
+[`docs/arcturon-spargenerator-brief.md`](docs/arcturon-spargenerator-brief.md).
 
 ### Vad språkbytet lade till i modulerna
 
 Fyra mätningar som inte fanns i C-versionen, och som alla är *gratis* i den
 meningen att koden redan finns:
 
-* **Modul 4:** kör svepet med `McsLock` direkt och genom `AnyLock`
+* **Modul 3:** kör svepet med `McsLock` direkt och genom `AnyLock`
   (typraderad). Skillnaden är kostnaden för dynamisk polymorfism, mätt i ditt
   eget lås. C-versionens vtable gav dig bara den andra siffran.
-* **Modul 5:** mät din `Future<T>` mot `std::future`. Ledtråd: standardens
+* **Modul 4:** mät din `Future<T>` mot `std::future`. Ledtråd: standardens
   allokerar ett delat tillstånd per anrop och tar ett lås i `get`.
-* **Modul 6:** kör samma arbetsbelastning genom den mallade `bench::run` och
+* **Modul 5:** kör samma arbetsbelastning genom den mallade `bench::run` och
   genom en `std::function`-version. Skillnaden är vad ett indirekt anrop
   kostar i den innersta loopen — och förklarar varför C-versionens siffror
   inte går att jämföra rakt av med de här.
-* **Modul 11:** `std::barrier` är den fjärde kurvan i diagrammet. Slår den dina
+* **Modul 10:** `std::barrier` är den fjärde kurvan i diagrammet. Slår den dina
   tre? Läs libstdc++:s implementation innan du förklarar bort det.
-
----
 
 ## Böckerna
 
