@@ -44,6 +44,7 @@
 /* sync — minnesmodellen, låskontraktet, och låsen som byggs av atomics */
 #include <sync/atomic.hpp>
 #include <sync/lockable.hpp>
+#include <sync/mutual_exclusion.hpp>
 #include <sync/spinlock.hpp>
 #include <sync/rwlock.hpp>
 #include <sync/semaphore.hpp>

@@ -36,6 +36,11 @@ PARA_TEST(m02_minnesmodellen_inte_genomarbetad) {
 
 PARA_TEST(m03_omsesidig_uteslutning_inte_byggd) {
     PARA_ASSERT_NOT_BUILT(para::Module::MutualExclusion);
+    /* Namnen finns redan — mätskripten i modul 5 vill ha dem, och de kommer
+     * ur typen så att de inte kan hamna i otakt med den. */
+    PARA_ASSERT(std::string{para::PetersonLock::name()} == "peterson");
+    PARA_ASSERT(std::string{para::FilterLock::name()} == "filter");
+    PARA_ASSERT(std::string{para::BakeryLock::name()} == "bakery");
 }
 
 PARA_TEST(m04_spinlas_inte_byggda) {

@@ -12,6 +12,28 @@
  *  bli det.
  * ══════════════════════════════════════════════════════════════════════════
  *
+ * ══════════════════════════════════════════════════════════════════════════
+ *  NUMRERINGEN HÄR ÄR REPOTS, INTE SPÅRETS — och de skiljer sig med ett steg
+ *  från och med modul 2.
+ *
+ *  Repot räknar modul 1 som "monorepot som bevisapparat", och den ÄR byggd:
+ *  Makefilen, testriggen och de fem kanariefåglarna finns och fungerar.
+ *  Studiespåret i Arcturon tog bort sin motsvarande modul 13 sep 2026 på
+ *  Viktors ord — han hade redan gjort den och ville börja med implementation
+ *  direkt. Spåret har därför elva moduler där repot har tolv:
+ *
+ *      repots modul 2  (minnesmodellen)     = spårets modul 1
+ *      repots modul 3  (ömsesidig uteslut.) = spårets modul 2
+ *      …
+ *      repots modul 12 (schemaläggaren)     = spårets modul 11
+ *
+ *  Numret i en huvudfil ("MODUL 8 fyller den här filen") är alltid REPOTS.
+ *  Att hålla dem åtskilda är billigare än att numrera om sjutton filer varje
+ *  gång kursplanen ändras — och repots modul 1 finns kvar just för att den
+ *  bär raden som bevisar att `is_built()` faktiskt läser tabellen
+ *  (tests/test_notbuilt.cpp::m01_repot_ar_byggt).
+ * ══════════════════════════════════════════════════════════════════════════
+ *
  * (C-versionen räknade i stället antalet `return PARA_ERR_NOTIMPL` i src/.
  * Det fungerade så länge varje stub var en funktion som KUNDE returnera en
  * kod. I C++ måste `void lock()` uppfylla Lockable och kan inte returnera

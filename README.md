@@ -145,7 +145,8 @@ TSan-bygget är **`-O2`, inte `-O0`** — ett osäkert bygge kör ett annat prog
 ```
 Paracore/
 ├── core/     status.hpp thread.hpp mutex.hpp barrier.hpp task.hpp
-├── sync/     atomic.hpp lockable.hpp spinlock.hpp rwlock.hpp semaphore.hpp
+├── sync/     atomic.hpp lockable.hpp mutual_exclusion.hpp spinlock.hpp
+│          rwlock.hpp semaphore.hpp
 ├── exec/     pool.hpp scheduler.hpp
 ├── ds/       set.hpp stack.hpp queue.hpp hashmap.hpp skiplist.hpp
 │   └── detail/   implementationerna av mallarna ovan
@@ -206,6 +207,11 @@ Elva moduler, 20 veckor. **Den gamla modul 1 — repot, grinden och
 kanariefåglarna — är borttagen:** den är byggd, den står i den här filen, och
 Viktor 13/9 ville *"börja med implementationer o sådant direkt"*.
 
+**Numret i tabellen är SPÅRETS.** Numret i en huvudfil ("MODUL 8 fyller den
+här filen") är REPOTS, och de skiljer sig med ett steg från och med modul 2 —
+repot räknar fortfarande sitt eget byggda modul 1. Hela resonemanget står i
+`src/core/modules.cpp`.
+
 Varje modul namnger sina **konkreta leveranser**, för det är dem
 lektionsgeneratorn räknar när den fördelar labbar — en labb per leverans.
 Fulla beskrivningar: [`docs/arcturon-sparstruktur.md`](docs/arcturon-sparstruktur.md).
@@ -215,7 +221,7 @@ Fulla beskrivningar: [`docs/arcturon-sparstruktur.md`](docs/arcturon-sparstruktu
 | # | v | Modul | Fyller |
 |---|---|---|---|
 | 1 | 2 | Minnesmodellen, mätt och inte trodd | `sync/atomic.hpp`, litmusriggen, `make lockfree` |
-| 2 | 1 | Ömsesidig uteslutning, byggd ur atomics | Peterson, filter, bageri |
+| 2 | 1 | Ömsesidig uteslutning, byggd ur atomics | `sync/mutual_exclusion.hpp` |
 | 3 | 2 | Spinlås, kontention och cachen | `sync/spinlock.hpp` — sex lås + `AnyLock` |
 | 4 | 2 | Monitorer, rättvisa och trådpoolen | `sync/rwlock.hpp`, `sync/semaphore.hpp`, `core/task.hpp`, `exec/pool.hpp` |
 | 5 | 1 | Mätriggen | `bench/bench.hpp` |
