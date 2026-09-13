@@ -243,9 +243,12 @@ lockfree:
 	   echo "  → taggade pekare ÄR lock-free här. Modul 9 kan använda dubbelbred CAS."; \
 	 elif [ $$rc -eq 2 ]; then \
 	   echo "  → taggade pekare är INTE lock-free här. Det är ett giltigt svar,"; \
-	   echo "    inte ett fel: g++ vägrar kalla cmpxchg16b lock-free. Modul 9"; \
-	   echo "    får lägga taggen i pekarens oanvända högbitar i stället —"; \
-	   echo "    eller bygga den delen med clang++. Välj, och skriv ned valet."; \
+	   echo "    inte ett fel: g++ vägrar kalla en 16-bytes CAS lock-free, för att"; \
+	   echo "    en atomär LÄSNING måste kunna ske på skrivskyddat minne och"; \
+	   echo "    instruktionen alltid skriver. Det gäller både cmpxchg16b och"; \
+	   echo "    aarch64:s CASP, och ingen -march-flagga ändrar det (mätt)."; \
+	   echo "    Modul 9 får lägga taggen i pekarens oanvända högbitar i stället"; \
+	   echo "    — eller bygga den delen med clang++. Välj, och skriv ned valet."; \
 	 else \
 	   echo "  → PROBET FÖLL. Inte ens atomic<T*> är lock-free. Något är fel i bygget."; \
 	   exit 1; \

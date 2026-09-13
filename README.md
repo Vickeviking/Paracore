@@ -89,6 +89,12 @@ minne, och instruktionen skriver alltid); clang gör en annan avvägning. Modul
 CAS i själva verket är ett bibliotekslås är inte lock-free — den är en låst
 stack med sämre kod, och ingenting i programmet säger ifrån.
 
+På Pi:n säger g++ 14.2 också nej, och där hjälper **ingen** flagga: `-mcpu=native`,
+`-march=armv8.2-a+lse` och `-mcpu=cortex-a76+lse` ger alla samma svar, trots att
+CPU:n har `atomics` (alltså LSE och CASP) i `/proc/cpuinfo`. Mätt 13 sep 2026.
+Att prova flaggorna är rätt reflex; att skriva ned att de inte hjälpte är det
+som gör att du slipper prova igen om tre månader.
+
 ---
 
 ## Make-mål

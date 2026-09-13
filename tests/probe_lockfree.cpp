@@ -27,6 +27,16 @@
  * måste kunna ske på skrivskyddat minne och cmpxchg16b skriver alltid. Clang
  * gör en annan avvägning. Ingen av dem har fel; de svarar på olika frågor.
  *
+ * PÅ AARCH64 (Pi 5, gunnar) säger g++ 14.2 också nej — och där hjälper INGEN
+ * flagga. Mätt 13 sep 2026, alla fyra gav "LÅST":
+ *
+ *     (inga flaggor)  -march=armv8.2-a+lse  -mcpu=native  -mcpu=cortex-a76+lse
+ *
+ * CPU:n har `atomics` i /proc/cpuinfo, alltså finns LSE och därmed CASP. GCC:s
+ * beslut handlar inte om instruktionen utan om samma läsbarhetsgaranti som på
+ * x86. Att prova flaggorna ändå är rätt reflex; att skriva ned att de inte
+ * hjälpte är det som gör att du slipper prova igen om tre månader.
+ *
  * Poängen är att du får VETA vilket svar ditt bygge gav, innan du bygger en
  * datastruktur ovanpå antagandet.
  */
