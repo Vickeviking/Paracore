@@ -36,6 +36,8 @@
 
 namespace para {
 
+std::uint64_t thread_id();
+
 /* En tråd som joinas av sin destruktor och kan bli ombedd att sluta.
  * Alias, inte omslag: allt <thread> kan fungerar på den. */
 using Thread = std::jthread;

@@ -1,4 +1,6 @@
+#include <atomic>
 #include <core/thread.hpp>
+#include <cstdint>
 #include <src/core/internal.hpp>
 
 #include <pthread.h>
@@ -7,7 +9,22 @@
 #include <cerrno>
 #include <thread>
 
+// private by anonymous namespace
+namespace {
+//Global thread counter, used to assign a thread_local
+std::atomic<std::uint64_t> next_id{1};
+thread_local std::uint64_t id = 0;
+} // namespace
+
 namespace para {
+
+std::uint64_t thread_id() {
+    if (id == 0) {
+        id = next_id.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    return id;
+}
 
 unsigned hardware_concurrency() noexcept {
     /* std::thread::hardware_concurrency FÅR returnera 0 ("om värdet inte går
