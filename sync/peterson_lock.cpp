@@ -31,4 +31,38 @@ int PetersonLock::get_or_assign_index() {
     std::abort();
 }
 
+PetersonLock::PetersonLock() {
+    flag_[0].store(false, std::memory_order_relaxed);
+    flag_[1].store(false, std::memory_order_relaxed);
+    victim_.store(0, std::memory_order_relaxed);
+    owner_[0].store(0, std::memory_order_relaxed);
+    owner_[1].store(0, std::memory_order_relaxed);
+}
+
+void PetersonLock::lock() {
+    const int i = get_or_assign_index(); //us
+    const int j = 1 - i;                 //the other threads index
+
+    flag_[i].store(true, std::memory_order_release); //we want lock
+    victim_.store(i, std::memory_order_release);     // we wait
+
+    for (;;) {
+
+        if (!flag_[j].load(std::memory_order_acquire)) {
+            // oponent dont want the lock
+            break;
+        }
+
+        if (victim_.load(std::memory_order_acquire) != i) {
+            // oponent waits
+            break;
+        }
+    }
+}
+
+void PetersonLock::unlock() {
+    const int i = get_or_assign_index();
+    flag_[i].store(false, std::memory_order_release);
+}
+
 } // namespace para

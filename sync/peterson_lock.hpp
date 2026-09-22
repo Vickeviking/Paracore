@@ -22,8 +22,9 @@ private:
 
     // 0 means occupied, Thread id occupying peterson slot
     std::atomic<u_int64_t> owner_[2];
-
     int get_or_assign_index();
 };
 
-} // namespace para
+} //namespace para
+
+static_assert(para::BasicLockable<para::PetersonLock>);
