@@ -1,44 +1,40 @@
-/* src/core/modules.cpp — BYGGPLANEN. Den enda filen du ändrar för att säga
- * att en modul är klar.
+/* src/core/modules.cpp — THE BUILD PLAN. The only file you change to say that
+ * a module is done.
  *
  * ══════════════════════════════════════════════════════════════════════════
- *  NÄR DU HAR BYGGT EN MODUL: vänd dess rad till true. Då faller testet i
- *  tests/test_notbuilt.cpp — och DET är signalen att gå dit, ta bort raden,
- *  och skriva riktiga tester för det du precis byggde.
+ *  WHEN YOU HAVE BUILT A MODULE: flip its row to true. The matching test in
+ *  tests/test_notbuilt.cpp then fails — and THAT is the signal to go there,
+ *  delete the row, and write real tests for what you just built.
  *
- *  `make progress` läser den här tabellen. Den är byggplanen i körbar form,
- *  och det är därför den ligger i koden och inte i en README: en TODO-lista
- *  i en README blir inaktuell, en TODO-lista som testsviten läser kan inte
- *  bli det.
+ *  `make progress` reads this table. It is the build plan in executable
+ *  form, and that is why it lives in the code and not in a README: a TODO
+ *  list in a README goes stale, a TODO list the test suite reads cannot.
  * ══════════════════════════════════════════════════════════════════════════
  *
  * ══════════════════════════════════════════════════════════════════════════
- *  NUMRERINGEN HÄR ÄR REPOTS, INTE SPÅRETS — och de skiljer sig med ett steg
- *  från och med modul 2.
+ *  THE NUMBERING IS THE ARCTURON TRACK'S, one to one.
  *
- *  Repot räknar modul 1 som "monorepot som bevisapparat", och den ÄR byggd:
- *  Makefilen, testriggen och de fem kanariefåglarna finns och fungerar.
- *  Studiespåret i Arcturon tog bort sin motsvarande modul 13 sep 2026 på
- *  Viktors ord — han hade redan gjort den och ville börja med implementation
- *  direkt. Spåret har därför elva moduler där repot har tolv:
+ *  The study track "Paracore" in Arcturon has eleven modules, and rows 1–11
+ *  below carry the same number and the same title. A number in a header
+ *  ("MODULE 7 fills this file") is always the track's number, so a lesson
+ *  that says "module 3" and a header that says "module 3" mean the same
+ *  thing.
  *
- *      repots modul 2  (minnesmodellen)     = spårets modul 1
- *      repots modul 3  (ömsesidig uteslut.) = spårets modul 2
- *      …
- *      repots modul 12 (schemaläggaren)     = spårets modul 11
+ *  Row 0 is the repo itself — the Makefile, the test rig and the five
+ *  canaries. It is not a track module (the track starts with implementation
+ *  directly), but it stays here because it is the row that proves
+ *  `is_built()` actually reads the table
+ *  (tests/test_notbuilt.cpp::m00_repo_is_built).
  *
- *  Numret i en huvudfil ("MODUL 8 fyller den här filen") är alltid REPOTS.
- *  Att hålla dem åtskilda är billigare än att numrera om sjutton filer varje
- *  gång kursplanen ändras — och repots modul 1 finns kvar just för att den
- *  bär raden som bevisar att `is_built()` faktiskt läser tabellen
- *  (tests/test_notbuilt.cpp::m01_repot_ar_byggt).
+ *  Status mirrors the track: a row is true when every lesson of that module
+ *  is completed in Arcturon AND the code exists here.
  * ══════════════════════════════════════════════════════════════════════════
  *
- * (C-versionen räknade i stället antalet `return PARA_ERR_NOTIMPL` i src/.
- * Det fungerade så länge varje stub var en funktion som KUNDE returnera en
- * kod. I C++ måste `void lock()` uppfylla Lockable och kan inte returnera
- * något alls, så räkningen hade blivit fel i samma stund som modul 4
- * påbörjades. Ett ställe är bättre än sjutton ändå.)
+ * (The C version counted the number of `return PARA_ERR_NOTIMPL` in src/
+ * instead. That worked as long as every stub was a function that COULD return
+ * a code. In C++, `void lock()` has to satisfy Lockable and cannot return
+ * anything, so the count would have been wrong the moment the spinlock module
+ * started. One place beats seventeen anyway.)
  */
 #include <core/status.hpp>
 
@@ -55,20 +51,20 @@ struct Row {
     const char *name;
 };
 
-/* ── byggplanen ──────────────────────────────────────────────────────────── */
+/* ── the build plan ──────────────────────────────────────────────────────── */
 constexpr Row kModules[] = {
-    {Module::Repo, true, "1  monorepot som bevisapparat"},
-    {Module::MemoryModel, false, "2  C++-minnesmodellen, mätt och inte trodd"},
-    {Module::MutualExclusion, false, "3  ömsesidig uteslutning som bevis"},
-    {Module::Spinlocks, false, "4  spinlås, kontention och cachen"},
-    {Module::Monitors, false, "5  monitorer, rättvisa och trådpoolen"},
-    {Module::BenchRig, false, "6  riggen: att mäta så siffran betyder något"},
-    {Module::Sets, false, "7  listor: fem synkroniseringsstrategier"},
-    {Module::QueuesStacks, false, "8  köer, stackar och elimination"},
-    {Module::Reclamation, false, "9  minnesåtervinning: ABA, hazard pointers"},
-    {Module::HashMaps, false, "10 hashtabeller: från ett lås till split-ordering"},
-    {Module::SkipLists, false, "11 skiplistor, prioritetsköer, barriärer"},
-    {Module::Scheduler, false, "12 slutprovet: work-stealing-schemaläggare"},
+    {Module::Repo, true, "0  the repo as a proof machine (prerequisite)"},
+    {Module::MemoryModel, true, "1  the memory model, measured and not believed"},
+    {Module::MutualExclusion, false, "2  mutual exclusion, built from atomics"},
+    {Module::Spinlocks, false, "3  spinlocks, contention and the cache"},
+    {Module::Monitors, false, "4  monitors, fairness and the thread pool"},
+    {Module::BenchRig, false, "5  the bench rig: measuring so the number means something"},
+    {Module::Sets, false, "6  sets: five synchronisation strategies on one data structure"},
+    {Module::QueuesStacks, false, "7  queues, stacks and elimination"},
+    {Module::Reclamation, false, "8  memory reclamation: ABA, hazard pointers and epochs"},
+    {Module::HashMaps, false, "9  hash tables: from one lock to split-ordering"},
+    {Module::SkipLists, false, "10 skip lists, priority queues and barriers"},
+    {Module::Scheduler, false, "11 the final exam: a work-stealing scheduler"},
 };
 
 const Row *find(Module m) noexcept {
@@ -89,17 +85,17 @@ bool is_built(Module m) noexcept {
 
 std::string_view module_name(Module m) noexcept {
     const Row *r = find(m);
-    return (r != nullptr) ? std::string_view{r->name} : std::string_view{"okänd modul"};
+    return (r != nullptr) ? std::string_view{r->name} : std::string_view{"unknown module"};
 }
 
 void not_built(Module m, std::string_view what) noexcept {
-    /* std::fprintf och inte std::print: den här körs ofta under en sanitizer
-     * eller i en kraschande process, och printf är det som är kvar när
-     * iostreams tillstånd inte går att lita på. */
+    /* std::fprintf and not std::print: this often runs under a sanitizer or in
+     * a crashing process, and printf is what is left when iostreams' state
+     * cannot be trusted. */
     std::fprintf(stderr,
-                 "\nparacore: %.*s är inte byggd ännu.\n"
-                 "          MODUL %.*s fyller den.\n"
-                 "          Vänd raden i src/core/modules.cpp när du har byggt den.\n\n",
+                 "\nparacore: %.*s is not built yet.\n"
+                 "          MODULE %.*s fills it.\n"
+                 "          Flip the row in src/core/modules.cpp when you have built it.\n\n",
                  static_cast<int>(what.size()), what.data(),
                  static_cast<int>(module_name(m).size()), module_name(m).data());
     std::abort();

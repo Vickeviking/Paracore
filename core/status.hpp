@@ -1,32 +1,32 @@
-/* core/status.hpp — Paracores felmodell.
+/* core/status.hpp — Paracore's error model.
  *
- * En enda enum genom hela biblioteket. Inget errno-läckage ut genom det
- * publika API:t: en anropare ska aldrig behöva veta att det var pthread
- * under. Det som kan misslyckas säger det i typen.
+ * One single enum through the whole library. No errno leaks out through the
+ * public API: a caller should never need to know that pthread was underneath.
+ * Whatever can fail says so in its type.
  *
- * TVÅ FORMER, OCH SKILLNADEN ÄR HELA POÄNGEN MED ATT SKRIVA DET HÄR I C++:
+ * TWO FORMS, AND THE DIFFERENCE IS THE WHOLE POINT OF WRITING THIS IN C++:
  *
- *   Status         när det inte finns något värde att lämna tillbaka.
+ *   Status         when there is no value to hand back.
  *                  `lock.unlock()`, `pool.wait_idle()`.
  *
- *   Result<T>      när det finns ett. Det är std::expected<T, Status>:
- *                  antingen ett T eller en Status, aldrig båda, aldrig
- *                  varken eller.
+ *   Result<T>      when there is one. It is std::expected<T, Status>:
+ *                  either a T or a Status, never both, never neither.
  *
- * C-versionen hade `para_status f(T *out)` överallt. Det mönstret har två
- * hål som inte går att stänga i C: `out` kan vara oinitierat när anropet
- * misslyckas, och ingenting hindrar dig från att läsa det ändå. Result<T>
- * gör det omöjligt — värdet finns bara i grenen där status var Ok.
+ * The C version had `para_status f(T *out)` everywhere. That pattern has two
+ * holes that cannot be closed in C: `out` may be uninitialised when the call
+ * fails, and nothing stops you from reading it anyway. Result<T> makes that
+ * impossible — the value only exists in the branch where the status was Ok.
  *
- * Status är [[nodiscard]]. Det gäller VARJE funktion som returnerar den,
- * utan att någon behöver komma ihåg att skriva attributet på anropsstället.
- * Att slänga bort en status kräver numera ett uttryckligt `(void)`, och det
- * `(void)` är en synlig lögn någon kan granska. I C var en ignorerad
- * returkod osynlig.
+ * Status is [[nodiscard]]. That applies to EVERY function that returns it,
+ * without anyone having to remember to write the attribute at the call site.
+ * Throwing a status away now takes an explicit `(void)`, and that `(void)` is
+ * a visible lie someone can review. In C an ignored return code was
+ * invisible.
  *
- * Regeln: Status::Ok är 0, allt annat är negativt. `if (st != Status::Ok)`
- * är kontrollen. `if (!st)` går inte att skriva — enum class har ingen
- * implicit konvertering till bool, och det är därför den är en enum class.
+ * The rule: Status::Ok is 0, everything else is negative.
+ * `if (st != Status::Ok)` is the check. `if (!st)` cannot be written — an
+ * enum class has no implicit conversion to bool, and that is why it is an
+ * enum class.
  */
 #ifndef PARACORE_CORE_STATUS_HPP
 #define PARACORE_CORE_STATUS_HPP
@@ -38,82 +38,83 @@ namespace para {
 
 enum class [[nodiscard]] Status : int {
     Ok = 0,
-    Invalid = -1,  /* ogiltigt argument (nullptr, 0 trådar, ...) */
-    NoMemory = -2, /* allokering misslyckades */
-    Again = -3,    /* resursen fanns inte just nu; försök igen */
-    Busy = -4,     /* upptagen (try_lock som inte fick låset) */
-    TimedOut = -5, /* tidsgränsen gick ut */
-    Closed = -6,   /* kön/poolen är stängd för nya jobb */
-    Full = -7,     /* begränsad kö full och anroparen ville inte vänta */
-    Empty = -8,    /* inget att hämta */
-    NotFound = -9, /* nyckeln finns inte */
-    OsError = -10, /* systemanropet sa nej; se last_os_error() */
-    NotBuilt = -99 /* du har inte byggt den här ännu. Det är meningen. */
+    Invalid = -1,  /* invalid argument (nullptr, 0 threads, ...) */
+    NoMemory = -2, /* allocation failed */
+    Again = -3,    /* the resource was not available right now; try again */
+    Busy = -4,     /* busy (try_lock that did not get the lock) */
+    TimedOut = -5, /* the deadline passed */
+    Closed = -6,   /* the queue/pool is closed to new jobs */
+    Full = -7,     /* bounded queue full and the caller did not want to wait */
+    Empty = -8,    /* nothing to take */
+    NotFound = -9, /* the key does not exist */
+    OsError = -10, /* the system call said no; see last_os_error() */
+    NotBuilt = -99 /* you have not built this yet. That is intended. */
 };
 
-/* Läsbar text för en status. Aldrig tom, aldrig allokerad — string_view
- * pekar in i statisk lagring, så den överlever anroparen. */
+/* Readable text for a status. Never empty, never allocated — the string_view
+ * points into static storage, so it outlives the caller. */
 [[nodiscard]] std::string_view to_string(Status st) noexcept;
 
-/* Den råa errno-koden bakom det senaste Status::OsError på DENNA tråd.
- * Finns för felsökning och felmeddelanden — inte för kontrollflöde. */
+/* The raw errno code behind the latest Status::OsError on THIS thread.
+ * Exists for debugging and error messages — not for control flow. */
 [[nodiscard]] int last_os_error() noexcept;
 
-/* Antingen ett T eller en Status.
+/* Either a T or a Status.
  *
  *     Result<int> r = q.try_pop();
  *     if (!r) { if (r.error() == Status::Empty) ... }
  *     else    { use(*r); }
  *
- * Result<void> finns också och används där ett anrop bara kan lyckas eller
- * misslyckas men läsaren vinner på `and_then`-kedjan. Vanlig Status är
- * fortfarande förstahandsvalet i det fallet. */
+ * Result<void> exists too, and is used where a call can only succeed or fail
+ * but the reader benefits from the `and_then` chain. Plain Status is still
+ * the first choice in that case. */
 template <class T> using Result = std::expected<T, Status>;
 
-/* `return fail(Status::Empty);` — kortare än std::unexpected på varje rad,
- * och läser som det gör. */
+/* `return fail(Status::Empty);` — shorter than std::unexpected on every line,
+ * and reads the way it does. */
 [[nodiscard]] inline std::unexpected<Status> fail(Status st) noexcept {
     return std::unexpected(st);
 }
 
-/* ── Byggplanen, i koden ───────────────────────────────────────────────────
+/* ── The build plan, in the code ───────────────────────────────────────────
  *
- * Repot ÄR kursplanen, och det kravet överlevde språkbytet. I C-versionen
- * räknade `make progress` antalet `return PARA_ERR_NOTIMPL` i src/. Det
- * fungerade så länge varje stub var en funktion som kunde returnera en kod
- * — och slutar fungera i C++, där en `void lock()` måste uppfylla
- * Lockable-konceptet och därför inte KAN returnera något alls.
+ * The repo IS the curriculum, and that requirement survived the language
+ * change. In the C version `make progress` counted the number of
+ * `return PARA_ERR_NOTIMPL` in src/. That worked as long as every stub was a
+ * function that could return a code — and stops working in C++, where a
+ * `void lock()` has to satisfy the Lockable concept and therefore CANNOT
+ * return anything.
  *
- * Så byggläget flyttade till ett ställe: src/core/modules.cpp. En rad per
- * modul. När du bygger modul 4 vänder du dess rad till true, och då faller
- * testet i tests/test_notbuilt.cpp — vilket är signalen att komma dit och
- * skriva ett riktigt test i stället.
+ * So the build state moved to one place: src/core/modules.cpp. One row per
+ * module. When you build module 3 you flip its row to true, and the test in
+ * tests/test_notbuilt.cpp fails — which is the signal to go there and write
+ * a real test instead.
  *
- * Det är fortfarande samma ritual. Den har bara ett ställe att ändras på i
- * stället för sjutton. */
+ * The numbers are the Arcturon track's module numbers, one to one. 0 is the
+ * repo itself, which is a prerequisite and not a track module. */
 enum class Module : int {
-    Repo = 1,            /* monorepot som bevisapparat — byggd */
-    MemoryModel = 2,     /* sync/atomic.hpp, litmusriggen */
-    MutualExclusion = 3, /* Peterson, filter, bageri */
-    Spinlocks = 4,       /* sync/spinlock.hpp — sex lås */
-    Monitors = 5,        /* exec/pool.hpp, sync/rwlock.hpp, core/task.hpp */
-    BenchRig = 6,        /* bench/bench.hpp */
-    Sets = 7,            /* ds/set.hpp */
-    QueuesStacks = 8,    /* ds/queue.hpp, ds/stack.hpp */
-    Reclamation = 9,     /* mem/reclaim.hpp */
-    HashMaps = 10,       /* ds/hashmap.hpp */
-    SkipLists = 11,      /* ds/skiplist.hpp, core/barrier.hpp */
-    Scheduler = 12       /* exec/scheduler.hpp */
+    Repo = 0,            /* the repo as a proof machine — built */
+    MemoryModel = 1,     /* sync/atomic.hpp, the litmus rig in playground/ */
+    MutualExclusion = 2, /* Peterson, filter, bakery */
+    Spinlocks = 3,       /* sync/spinlock.hpp — six locks */
+    Monitors = 4,        /* exec/pool.hpp, sync/rwlock.hpp, core/task.hpp */
+    BenchRig = 5,        /* bench/bench.hpp */
+    Sets = 6,            /* ds/set.hpp */
+    QueuesStacks = 7,    /* ds/queue.hpp, ds/stack.hpp */
+    Reclamation = 8,     /* mem/reclaim.hpp */
+    HashMaps = 9,        /* ds/hashmap.hpp */
+    SkipLists = 10,      /* ds/skiplist.hpp, core/barrier.hpp */
+    Scheduler = 11       /* exec/scheduler.hpp */
 };
 
 [[nodiscard]] bool is_built(Module m) noexcept;
 [[nodiscard]] std::string_view module_name(Module m) noexcept;
 
-/* Anropas av en stub vars signatur inte kan bära Status::NotBuilt — alltså
- * `void lock()` och liknande. Skriver vilken modul som fyller den och
- * abort:ar. Testriggen rapporterar det som SIGNAL med testets namn, vilket
- * är ett tydligare besked än en tyst no-op som får nästa assert att falla
- * på fel rad. */
+/* Called by a stub whose signature cannot carry Status::NotBuilt — i.e.
+ * `void lock()` and the like. Prints which module fills it and aborts. The
+ * test rig reports that as SIGNAL with the test's name, which is a clearer
+ * answer than a silent no-op that makes the next assert fail on the wrong
+ * line. */
 [[noreturn]] void not_built(Module m, std::string_view what) noexcept;
 
 } // namespace para
