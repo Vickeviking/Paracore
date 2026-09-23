@@ -27,6 +27,12 @@ in *The Art of Multiprocessor Programming*. The repo lives at
 `~/dev/project/Paracore` (the devbox), `~/dev/Paracore` (the thinkpad,
 gunnar).
 
+### Language
+
+Write the lessons in Swedish, as before. Everything that goes into the repo —
+code, identifiers, code comments, test names, commit messages, file names — is
+in English, because the whole repo is English.
+
 ### Level
 
 The student is in the second year of the MSc programme in information
