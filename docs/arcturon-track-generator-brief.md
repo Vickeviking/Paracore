@@ -66,6 +66,43 @@ lessons build. **A stub already exists for every type in the track** — a lesso
 fills the existing stub in its existing header; it never creates a second
 class with the same name in a new file.
 
+### Where every type already lives — the COMPLETE list of headers
+
+These are the only headers in the library. Every type the track builds is
+already declared in one of them, as a stub. A lesson opens THIS file and fills
+the stub; it never names or creates another header (there is no
+`ds/coarse_set.hpp`, `sync/filter_lock.hpp`, `mem/hazard_domain.hpp`,
+`exec/thread_pool.hpp` or similar — writing such a path is a bug in the
+lesson).
+
+| Header | Types (all in `namespace para`) | Module |
+|---|---|---|
+| `sync/peterson_lock.hpp` | `PetersonLock` (built) | 2 |
+| `sync/mutual_exclusion.hpp` | `FilterLock`, `BakeryLock` | 2 |
+| `sync/spinlock.hpp` | `TasLock`, `TtasLock`, `BackoffLock`, `ArrayLock`, `ClhLock`, `McsLock`, `AnyLock` | 3 |
+| `sync/rwlock.hpp` | `ReaderPreferenceRwLock`, `FairRwLock` | 4 |
+| `sync/semaphore.hpp` | `CountingSemaphore<N>`, `BinarySemaphore` | 4 |
+| `core/task.hpp` | `Task`, `Future<T>`, `detail::FutureState<T>` | 4 |
+| `exec/pool.hpp` | `ThreadPool` | 4 |
+| `bench/bench.hpp` | `bench::Config`, `bench::Measurement`, `bench::Workload`, `bench::run`, `bench::write_header` | 5 |
+| `ds/set.hpp` | `CoarseSet`, `FineSet`, `OptimisticSet`, `LazySet`, `LockFreeSet` | 6 |
+| `ds/stack.hpp` | `LockedStack`, `TreiberStack`, `EliminationStack`, concept `LockFreeElement` | 7 |
+| `ds/queue.hpp` | `TwoLockQueue`, `MichaelScottQueue`, `SpscRing<T, N>`, `BlockingQueue` | 7 |
+| `mem/reclaim.hpp` | `LeakDomain` (built), `TaggedPtr`, `HazardDomain<T, Hazards>` (+ `Guard<Slot>`, `Registration`), `EpochDomain` (+ `Pin`) | 8 |
+| `ds/hashmap.hpp` | `GlobalMap`, `StripedMap`, `RefinableMap`, `SplitOrderedMap` (incl. static `split_order_key`) | 9 |
+| `ds/skiplist.hpp` | `RandomLevel`, `LazySkipList`, `LockFreeSkipList`, `PriorityQueue` | 10 |
+| `core/barrier.hpp` | `SenseBarrier`, `TournamentBarrier`, `TreeBarrier`, `Arrival` | 10 |
+| `exec/scheduler.hpp` | `Scheduler`, `SchedulerStats` (the Chase–Lev deque is private to the scheduler's implementation) | 11 |
+
+Where the implementation goes: the templates in `ds/*.hpp` and
+`mem/reclaim.hpp` are implemented in the matching `ds/detail/<header>_impl.hpp`
+/ `mem/detail/reclaim_impl.hpp` (e.g. `CoarseSet` → `ds/detail/set_impl.hpp`)
+— never in a `.cpp`. Non-template classes (locks, pool, scheduler) are
+implemented in `src/<same path>.cpp` (e.g. `FilterLock` →
+`src/sync/mutual_exclusion.cpp`, `ThreadPool` → `src/exec/pool.cpp`, which
+already exists). Benchmarks and standalone experiments are
+`playground/<name>.cpp`, not new files under `bench/`.
+
 ### The repo's mechanics — get these exactly right
 
 1. **Where code goes.** Headers live in their directory (`sync/`, `ds/`, ...).
