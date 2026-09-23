@@ -1,54 +1,55 @@
-/* KANARIEFÅGEL 2 — en LATENT deadlock (ABBA-låsordning) som aldrig inträffar.
+/* CANARY 2 — a LATENT deadlock (ABBA lock order) that never happens.
  *
- * Den viktigaste av de fem, och avsiktligt konstruerad så att den ALDRIG
- * fastnar: en grind (`G` + `C`) släpper inte fram tråd 2:s B→A förrän tråd 1:s
- * A→B är helt klar. De två kan omöjligen mötas. Programmet kör igenom på
- * nolltid, varje gång, på varje maskin.
+ * The most important of the five, and deliberately built so that it NEVER
+ * gets stuck: a gate (`G` + `C`) does not let thread 2's B→A through until
+ * thread 1's A→B is completely done. The two cannot possibly meet. The
+ * program runs through in no time, every time, on every machine.
  *
- * Och ändå är buggen där. Om de två ordningarna någon gång utfördes samtidigt
- * skulle trådarna deadlocka, och så här ser verkliga låsordningsbuggar ut:
- * latenta i månader, gröna i CI, och sedan hänger produktionen en tisdag för
- * att lasten råkade bli hög.
+ * And yet the bug is there. If the two orders were ever executed at the same
+ * time the threads would deadlock, and this is what real lock-order bugs look
+ * like: latent for months, green in CI, and then production hangs one Tuesday
+ * because the load happened to get high.
  *
- * `make canary` kräver att helgrind rapporterar "lock order violated" på ett
- * program som fungerade perfekt. Det är hela skälet att verktyget finns:
+ * `make canary` requires helgrind to report "lock order violated" on a program
+ * that worked perfectly. That is the whole reason the tool exists:
  *
- *     ett test kan bara visa att buggen inte inträffade den här gången.
- *     helgrind visar att den KAN inträffa.
+ *     a test can only show that the bug did not happen this time.
+ *     helgrind shows that it CAN happen.
  *
- * ── Varför BÅDA trådarna skapas innan någon joinas ─────────────────────────
+ * ── Why BOTH threads are created before either is joined ──────────────────
  *
- * Inte stil, utan en verklig krock med verktyget. Den första versionen gjorde
- * create(t1); join(t1); create(t2); join(t2) — alltså skapade en tråd EFTER
- * att en annan hade joinats. Det får helgrind 3.25.1 att krascha internt:
+ * Not style, but a real clash with the tool. The first version did
+ * create(t1); join(t1); create(t2); join(t2) — i.e. it created a thread AFTER
+ * another one had been joined. That makes helgrind 3.25.1 crash internally:
  *
  *     Helgrind: hg_main.c:5411 (hg_handle_client_request):
  *               Assertion 'found' failed.
  *
- * Den kraschen ser i utskriften nästan ut som "hittade inget", och just den
- * förväxlingen är vad kanariefåglarna finns för att omöjliggöra. Den upptäcktes
- * också precis som den skulle: samma repo gick grönt på en maskin och rött på
- * nästa. Kör dem på båda.
+ * In the output that crash looks almost like "found nothing", and exactly
+ * that confusion is what the canaries exist to make impossible. It was also
+ * discovered exactly the way it should be: the same repo went green on one
+ * machine and red on the next. Run them on both.
  *
- * Det här är också anledningen till att trådarna ligger i ett eget scope
- * nedan i stället för att skapas och joinas var för sig — std::jthread joinar
- * i destruktorn, och destruktorerna körs i omvänd ordning vid scopets slut,
- * alltså efter att båda har skapats. Formen som undviker helgrind-kraschen
- * blev den naturliga formen i C++.
+ * This is also why the threads live in their own scope below instead of being
+ * created and joined one at a time — std::jthread joins in its destructor, and
+ * the destructors run in reverse order at the end of the scope, i.e. after
+ * both have been created. The form that avoids the helgrind crash became the
+ * natural form in C++.
  *
- * FIXA ALDRIG ABBA-ORDNINGEN NEDAN. Grinden får du gärna göra elegantare.
+ * NEVER FIX THE ABBA ORDER BELOW. You are welcome to make the gate more
+ * elegant.
  *
- * ── Och en sak du ska prova ────────────────────────────────────────────────
+ * ── And one thing you should try ──────────────────────────────────────────
  *
- * Byt de två kritiska sektionerna mot
+ * Replace the two critical sections with
  *
- *     std::scoped_lock guard{A, B};      respektive     std::scoped_lock guard{B, A};
+ *     std::scoped_lock guard{A, B};      and      std::scoped_lock guard{B, A};
  *
- * och kör helgrind igen. Buggen är BORTA, trots att ordningen i koden
- * fortfarande är omvänd — std::lock provar och backar av i stället för att
- * låsa i tur och ordning. Det är kanariefågel 2:s bugg, löst i standarden,
- * och det fungerar med dina egna lås i samma stund som de uppfyller
- * para::Lockable. Sätt sedan tillbaka den här versionen.
+ * and run helgrind again. The bug is GONE, even though the order in the code
+ * is still reversed — std::lock tries and backs off instead of locking one
+ * after the other. That is canary 2's bug, solved in the standard library,
+ * and it works with your own locks the moment they satisfy para::Lockable.
+ * Then put this version back.
  */
 #include <core/mutex.hpp>
 #include <core/thread.hpp>
@@ -61,7 +62,8 @@ namespace {
 para::Mutex A;
 para::Mutex B;
 
-/* Grinden som gör kollisionen omöjlig — och därmed poängen tydlig. */
+/* The gate that makes the collision impossible — and thereby the point
+ * clear. */
 para::Mutex G;
 para::CondVar C;
 bool first_done = false;
@@ -85,7 +87,7 @@ void lock_ba() {
     }
     {
         std::lock_guard gb{B};
-        std::lock_guard ga{A}; /* B → A — och det är buggen */
+        std::lock_guard ga{A}; /* B → A — and that is the bug */
     }
 }
 
@@ -94,9 +96,9 @@ void lock_ba() {
 int main() {
     {
         para::Thread t1{lock_ab};
-        para::Thread t2{lock_ba}; /* båda skapade före någon join */
+        para::Thread t2{lock_ba}; /* both created before any join */
     }
-    std::printf("kördes igenom utan att hänga — och är ändå trasig.\n"
-                "helgrind ska säga 'lock order ... violated'.\n");
+    std::printf("ran through without hanging — and is broken anyway.\n"
+                "helgrind should say 'lock order ... violated'.\n");
     return 0;
 }

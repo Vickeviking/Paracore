@@ -27,10 +27,10 @@ std::uint64_t thread_id() {
 }
 
 unsigned hardware_concurrency() noexcept {
-    /* std::thread::hardware_concurrency FÅR returnera 0 ("om värdet inte går
-     * att beräkna eller inte är väldefinierat"). Den nollan har dividerats med
-     * i fler projekt än någon vill erkänna — och på en Pi i en container är
-     * den inte hypotetisk. */
+    /* std::thread::hardware_concurrency MAY return 0 ("if the value is not
+     * computable or not well defined"). That zero has been divided by in more
+     * projects than anyone wants to admit — and on a Pi in a container it is
+     * not hypothetical. */
     const unsigned n = std::thread::hardware_concurrency();
     return (n > 0u) ? n : 1u;
 }

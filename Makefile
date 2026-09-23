@@ -1,18 +1,19 @@
 # ══════════════════════════════════════════════════════════════════════════
 #  Paracore — Makefile
 #
-#  `make help` listar allt. De fyra du använder dagligen:
+#  `make help` lists everything. The four you use daily:
 #
-#      make            bygg biblioteket, testerna och playground
-#      make test       kör testsviten (watchdog fångar deadlocks)
-#      make tsan       kör testsviten under ThreadSanitizer
-#      make check      HELA grinden — det som ska vara grönt innan du committar
+#      make            build the library, the tests and the playground
+#      make test       run the test suite (the watchdog catches deadlocks)
+#      make tsan       run the test suite under ThreadSanitizer
+#      make check      the WHOLE gate — what must be green before you commit
 #
-#  Och den viktigaste, som du kör FÖRST i ett nytt repo eller på en ny maskin:
+#  And the most important one, which you run FIRST in a new repo or on a new
+#  machine:
 #
-#      make canary     bevisar att verktygen faktiskt hittar buggar
+#      make canary     proves that the tools actually find bugs
 #
-#  MODE styr byggkonfigurationen och därmed build/<MODE>/:
+#  MODE controls the build configuration and therefore build/<MODE>/:
 #      debug (default) | release | tsan | asan
 # ══════════════════════════════════════════════════════════════════════════
 
@@ -23,30 +24,32 @@ PROG        ?= hello
 JOBS        ?= $(shell nproc 2>/dev/null || echo 4)
 ARCH        := $(shell uname -m)
 
-# ── flaggor ───────────────────────────────────────────────────────────────
-# -Werror från dag ett. En varning i samtidig C++ är inte kosmetik:
-# -Wconversion fångar den avhuggna räknaren i din hashfunktion, -Wshadow
-# fångar det `node` i inre scope som gjorde att du frigjorde fel pekare, och
-# -Wold-style-cast fångar den (Node*)-kast som gick förbi typsystemet i tysthet.
+# ── flags ─────────────────────────────────────────────────────────────────
+# -Werror from day one. A warning in concurrent C++ is not cosmetic:
+# -Wconversion catches the truncated counter in your hash function, -Wshadow
+# catches the `node` in an inner scope that made you free the wrong pointer,
+# and -Wold-style-cast catches the (Node*) cast that silently bypassed the
+# type system.
 WARN := -Wall -Wextra -Werror -Wshadow -Wconversion -Wsign-conversion \
         -Wpointer-arith -Wcast-qual -Wdouble-promotion -Wold-style-cast \
         -Wnon-virtual-dtor -Woverloaded-virtual -Wextra-semi -Wnull-dereference
 
-# ── standarden ────────────────────────────────────────────────────────────
-# C++23, och det är MÄTT och inte antaget: std::expected, move_only_function
-# och std::print finns i g++ 14.2 på Pi:n, g++ 16.2 på laptoparna och
-# clang++ 22. C++20 hade räckt för allt utom Result<T>, och Result<T> är
-# skälet till att felmodellen blev vad den blev. Se core/status.hpp.
+# ── the standard ──────────────────────────────────────────────────────────
+# C++23, and that is MEASURED and not assumed: std::expected,
+# move_only_function and std::print exist in g++ 14.2 on the Pi, g++ 16.2 on
+# the laptops and clang++ 22. C++20 would have been enough for everything
+# except Result<T>, and Result<T> is the reason the error model became what
+# it is. See core/status.hpp.
 STD := -std=c++23
 
-# ── dubbelbred CAS ────────────────────────────────────────────────────────
-# -mcx16 ger cmpxchg16b på x86-64, alltså en 16-bytes CAS utan bibliotekslås.
-# Modul 9:s taggade pekare står och faller med den.
+# ── double-width CAS ──────────────────────────────────────────────────────
+# -mcx16 gives cmpxchg16b on x86-64, i.e. a 16-byte CAS without a library
+# lock. Module 8's tagged pointers stand or fall with it.
 #
-# OBS: flaggan garanterar INTE att std::atomic<16 byte> blir lock-free. g++
-# säger fortfarande nej, clang++ säger ja, med exakt samma flagga. Kör
-# `make lockfree` för svaret på DEN HÄR maskinen med DEN HÄR kompilatorn,
-# och läs tests/probe_lockfree.cpp om varför de skiljer sig.
+# NOTE: the flag does NOT guarantee that std::atomic<16 bytes> becomes
+# lock-free. g++ still says no, clang++ says yes, with exactly the same flag.
+# Run `make lockfree` for the answer on THIS machine with THIS compiler, and
+# read tests/probe_lockfree.cpp for why they differ.
 ifeq ($(ARCH),x86_64)
   ARCHFLAGS := -mcx16
 else
@@ -60,12 +63,13 @@ ifeq ($(MODE),debug)
   CXXFLAGS := $(BASE) -O0 -g3 -fno-omit-frame-pointer -DPARA_DEBUG=1 -DPARA_MUTEX_CHECKED=1
   LDFLAGS  := $(LDBASE)
 else ifeq ($(MODE),release)
-  # -march=native bara när du ber om det: en binär byggd så kraschar på Pi:n.
+  # -march=native only when you ask for it: a binary built that way crashes
+  # on the Pi.
   CXXFLAGS := $(BASE) -O2 -g -DNDEBUG $(if $(NATIVE),-march=native,)
   LDFLAGS  := $(LDBASE)
 else ifeq ($(MODE),tsan)
-  # -O2, INTE -O0. Ett TSan-bygge utan optimering kör ett annat program än det
-  # du skeppar, och gömmer just de omordningar du är ute efter.
+  # -O2, NOT -O0. A TSan build without optimisation runs a different program
+  # from the one you ship, and hides exactly the reorderings you are after.
   CXXFLAGS := $(BASE) -O2 -g -fsanitize=thread -fno-omit-frame-pointer
   LDFLAGS  := $(LDBASE) -fsanitize=thread
 else ifeq ($(MODE),asan)
@@ -73,14 +77,14 @@ else ifeq ($(MODE),asan)
               -fno-sanitize-recover=all
   LDFLAGS  := $(LDBASE) -fsanitize=address,undefined
 else
-  $(error okänt MODE '$(MODE)' — välj debug, release, tsan eller asan)
+  $(error unknown MODE '$(MODE)' — choose debug, release, tsan or asan)
 endif
 
-# ── sanitizer-inställningar ───────────────────────────────────────────────
-# halt_on_error: en kapplöpning ska fälla bygget, inte skrivas i förbifarten.
-# detect_deadlocks: TSan hittar låsordningsinversioner ÄVEN när deadlocken
-#   inte inträffar — vilket är hela skillnaden mot att vänta på att den gör det.
-# second_deadlock_stack: visar BÅDA låsplatserna, annars gissar du.
+# ── sanitizer settings ────────────────────────────────────────────────────
+# halt_on_error: a race should fail the build, not be written in passing.
+# detect_deadlocks: TSan finds lock-order inversions EVEN when the deadlock
+#   does not happen — which is the whole difference from waiting for it to.
+# second_deadlock_stack: shows BOTH lock sites, otherwise you guess.
 TSAN_OPTIONS  ?= halt_on_error=1:second_deadlock_stack=1:detect_deadlocks=1:history_size=4
 ASAN_OPTIONS  ?= detect_leaks=1:abort_on_error=1:strict_string_checks=1
 UBSAN_OPTIONS ?= print_stacktrace=1:halt_on_error=1
@@ -90,12 +94,15 @@ VG_COMMON := --error-exitcode=42 --trace-children=yes --child-silent-after-fork=
 VG_MEM    := --tool=memcheck --leak-check=full --show-leak-kinds=definite,possible \
              --track-origins=yes --errors-for-leak-kinds=definite
 
-# ── källor ────────────────────────────────────────────────────────────────
+# ── sources ───────────────────────────────────────────────────────────────
+# Every .cpp of the library lives under src/ — that is the ONLY tree compiled
+# into libparacore.a. A .cpp placed next to its header (e.g. sync/foo.cpp) is
+# never built, and the first sign is an "undefined reference" at link time.
 LIB_SRC  := $(shell find src -name '*.cpp' | sort)
 LIB_OBJ  := $(LIB_SRC:%.cpp=$(BUILD)/%.o)
 LIB      := $(BUILD)/libparacore.a
 
-# tests/*.cpp minus kanariefåglarna och probet (de är egna program)
+# tests/*.cpp minus the canaries and the probe (they are programs of their own)
 TEST_SRC := $(filter-out tests/canary_%.cpp tests/probe_%.cpp,$(wildcard tests/*.cpp))
 TEST_OBJ := $(TEST_SRC:%.cpp=$(BUILD)/%.o)
 TEST_BIN := $(BUILD)/paratest
@@ -105,10 +112,10 @@ CANARY_BIN := $(CANARY_SRC:tests/canary_%.cpp=$(BUILD)/canary_%)
 
 PROBE_SRC := $(wildcard tests/probe_*.cpp)
 
-# Både playground/ och dess git-ignorerade skräplåda. Att scratch/ inte
-# committas får inte betyda att den inte byggs — en fil som kompilerar sämre
-# för att den ligger i fel mapp är precis den sortens överraskning en lekplats
-# ska vara fri från.
+# Both playground/ and its git-ignored scratch box. That scratch/ is not
+# committed must not mean that it is not built — a file that compiles worse
+# because it sits in the wrong directory is exactly the kind of surprise a
+# playground should be free of.
 PLAY_SRC := $(wildcard playground/*.cpp) $(wildcard playground/scratch/*.cpp)
 PLAY_BIN := $(PLAY_SRC:playground/%.cpp=$(BUILD)/play_%)
 
@@ -116,14 +123,14 @@ PLAY_BIN := $(PLAY_SRC:playground/%.cpp=$(BUILD)/play_%)
         canary canary-watchdog lockfree stress bench check fmt fmt-check tidy \
         compile_commands _cc_fallback progress arm clean distclean help
 
-# ── Vilka verktyg fungerar FAKTISKT på den här maskinen? ──────────────────
+# ── Which tools ACTUALLY work on this machine? ────────────────────────────
 #
-# "Installerat" och "fungerar" är inte samma sak. ThreadSanitizer finns i gcc
-# på Pi:n men vägrar starta där: kärnan ger 47-bitars VMA och TSan stöder 39,
-# 42 och 48. Ett verktyg som inte kan köra har inte svarat "nej" — det har inte
-# kontrollerat någonting alls, och de två får aldrig se likadana ut.
+# "Installed" and "works" are not the same thing. ThreadSanitizer exists in
+# gcc on the Pi but refuses to start there: the kernel gives a 47-bit VMA and
+# TSan supports 39, 42 and 48. A tool that cannot run has not answered "no" —
+# it has not checked anything at all, and the two must never look alike.
 #
-# Probet bygger och kör ett minimalt program en gång och sparar svaret.
+# The probe builds and runs a minimal program once and saves the answer.
 $(BUILD)/.tsan-works: | $(BUILD)
 	@printf 'int main(){return 0;}\n' > $(BUILD)/.probe.cpp
 	@if $(CXX) $(STD) -fsanitize=thread -O1 $(BUILD)/.probe.cpp -o $(BUILD)/.probe 2>/dev/null \
@@ -137,18 +144,18 @@ $(BUILD):
 TSAN_WORKS = $$(cat $(BUILD)/.tsan-works 2>/dev/null || echo unknown)
 TSAN_WHY   = $$(cat $(BUILD)/.tsan-works.why 2>/dev/null | tr '\n' ' ')
 
-# Utan detta blir default-målet $(BUILD)/.tsan-works — den första riktiga
-# regeln i filen — och ett blankt `make` bygger ingenting alls.
+# Without this the default target becomes $(BUILD)/.tsan-works — the first
+# real rule in the file — and a bare `make` builds nothing at all.
 .DEFAULT_GOAL := all
 
 all: lib tests play
-	@echo "byggt i $(BUILD)/  (MODE=$(MODE), $(CXX), $(STD))"
+	@echo "built in $(BUILD)/  (MODE=$(MODE), $(CXX), $(STD))"
 
 lib: compile_commands.json $(LIB)
 tests: compile_commands.json $(TEST_BIN)
 play: compile_commands.json $(PLAY_BIN)
 
-# ── bygglinjer ────────────────────────────────────────────────────────────
+# ── build rules ───────────────────────────────────────────────────────────
 $(BUILD)/%.o: %.cpp | compile_commands.json
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
@@ -174,7 +181,7 @@ $(BUILD)/play_%: playground/%.cpp $(LIB) | compile_commands.json
 
 -include $(shell find build -name '*.d' 2>/dev/null)
 
-# ── köra ──────────────────────────────────────────────────────────────────
+# ── running ───────────────────────────────────────────────────────────────
 run: play
 	@echo "── playground/$(PROG).cpp ────────────────────────────"
 	@$(BUILD)/play_$(PROG) $(ARGS)
@@ -184,15 +191,15 @@ test:
 	@echo "── make test (MODE=debug) ────────────────────────────"
 	@build/debug/paratest $(ARGS)
 
-# ThreadSanitizer: kapplöpningar OCH låsordningsinversioner.
+# ThreadSanitizer: races AND lock-order inversions.
 tsan: $(BUILD)/.tsan-works
 	@if [ "$(TSAN_WORKS)" != "yes" ]; then \
 	   echo "── make tsan ─────────────────────────────────────────"; \
-	   echo "ThreadSanitizer KAN INTE KÖRA på den här maskinen ($$(uname -m)):"; \
+	   echo "ThreadSanitizer CANNOT RUN on this machine ($$(uname -m)):"; \
 	   echo "    $(TSAN_WHY)"; \
-	   echo "Det är inte ett resultat — inga kapplöpningar är kontrollerade."; \
-	   echo "Kör steget på en maskin där TSan startar; helgrind (make helgrind)"; \
-	   echo "hittar mycket av samma sak och bryr sig inte om VMA-bredden."; \
+	   echo "That is not a result — no races have been checked."; \
+	   echo "Run the step on a machine where TSan starts; helgrind (make helgrind)"; \
+	   echo "finds much of the same and does not care about the VMA width."; \
 	   exit 1; \
 	 fi
 	@$(MAKE) --no-print-directory MODE=tsan build/tsan/paratest
@@ -203,35 +210,36 @@ tsan-run:
 	@$(MAKE) --no-print-directory MODE=tsan build/tsan/play_$(PROG)
 	@TSAN_OPTIONS="$(TSAN_OPTIONS)" build/tsan/play_$(PROG) $(ARGS)
 
-# Fanns inte förrän lekplatsen fick sin egen README: `tsan-run` hade ingen
-# motsvarighet för minnesfel, så ett experiment som läckte eller läste fritt
-# minne gick bara att köra genom testsviten — dit experiment inte hör hemma.
+# Did not exist until the playground got its own README: `tsan-run` had no
+# counterpart for memory errors, so an experiment that leaked or read freed
+# memory could only be run through the test suite — where experiments do not
+# belong.
 asan-run:
 	@$(MAKE) --no-print-directory MODE=asan build/asan/play_$(PROG)
 	@ASAN_OPTIONS="$(ASAN_OPTIONS)" UBSAN_OPTIONS="$(UBSAN_OPTIONS)" \
 	  build/asan/play_$(PROG) $(ARGS)
 
-# ── lekplatsen ────────────────────────────────────────────────────────────
+# ── the playground ────────────────────────────────────────────────────────
 #
-# `make new PROG=x` skriver playground/x.cpp från en mall som redan har rätt
-# include, rätt namnrymd och en körbar main(). Friktionen den tar bort är inte
-# tangenttryckningarna utan FRÅGAN: "vad hette headern nu igen?" — och den
-# frågan är nog för att ett infall inte blir ett experiment.
+# `make new PROG=x` writes playground/x.cpp from a template that already has
+# the right include, the right namespace and a runnable main(). The friction
+# it removes is not the keystrokes but the QUESTION: "what was the header
+# called again?" — and that question is enough for a whim not to become an
+# experiment.
 #
-# Den skriver ALDRIG över en fil som finns. Ett experiment du glömt bort är
-# fortfarande ditt arbete, och `make new` på ett upptaget namn är nästan
-# alltid ett stavfel.
+# It NEVER overwrites a file that exists. An experiment you forgot about is
+# still your work, and `make new` on a taken name is almost always a typo.
 new:
-	@test -n "$(PROG)" || { echo "ange namn:  make new PROG=minlek"; exit 1; }
-	@case "$(PROG)" in */*) echo "namnet får inte innehålla /"; exit 1;; esac
+	@test -n "$(PROG)" || { echo "give a name:  make new PROG=myexp"; exit 1; }
+	@case "$(PROG)" in */*) echo "the name must not contain /"; exit 1;; esac
 	@if [ -e playground/$(PROG).cpp ]; then \
-	   echo "playground/$(PROG).cpp finns redan — jag rör den inte."; \
-	   echo "kör:  make run PROG=$(PROG)"; exit 1; \
+	   echo "playground/$(PROG).cpp already exists — I will not touch it."; \
+	   echo "run:  make run PROG=$(PROG)"; exit 1; \
 	 fi
 	@printf '%s\n' \
 	  '/* playground/$(PROG).cpp' \
 	  ' *' \
-	  ' *     make run PROG=$(PROG)        # bygg och kör' \
+	  ' *     make run PROG=$(PROG)        # build and run' \
 	  ' *     make tsan-run PROG=$(PROG)   # under ThreadSanitizer' \
 	  ' *     make asan-run PROG=$(PROG)   # under ASan + UBSan' \
 	  ' */' \
@@ -242,21 +250,21 @@ new:
 	  '#include <vector>' \
 	  '' \
 	  'int main() {' \
-	  '    std::println("$(PROG) — {} hårdvarutrådar", para::hardware_concurrency());' \
+	  '    std::println("$(PROG) — {} hardware threads", para::hardware_concurrency());' \
 	  '' \
 	  '    std::vector<std::jthread> workers;' \
 	  '    for (unsigned i = 0; i < 4; ++i) {' \
 	  '        workers.emplace_back([i](std::stop_token stop) {' \
 	  '            if (stop.stop_requested()) return;' \
-	  '            std::println("  tråd {} här", i);' \
+	  '            std::println("  thread {} here", i);' \
 	  '        });' \
 	  '    }' \
-	  '    /* jthread joinar i sin destruktor — ingen explicit join behövs. */' \
+	  '    /* jthread joins in its destructor — no explicit join needed. */' \
 	  '    return 0;' \
 	  '}' \
 	  > playground/$(PROG).cpp
-	@echo "skapade playground/$(PROG).cpp"
-	@echo "kör:  make run PROG=$(PROG)"
+	@echo "created playground/$(PROG).cpp"
+	@echo "run:  make run PROG=$(PROG)"
 
 list:
 	@echo "══ playground/ ══════════════════════════════════════════════════"
@@ -267,172 +275,173 @@ list:
 	   printf "  %-22s %s\n" "$$n" "$$d"; \
 	 done
 	@echo
-	@echo "  make run PROG=<namn>      kör    (även tsan-run / asan-run / bench)"
-	@echo "  make new PROG=<namn>      skapa en ny från mall"
+	@echo "  make run PROG=<name>      run    (also tsan-run / asan-run / bench)"
+	@echo "  make new PROG=<name>      create a new one from the template"
 	@echo
-	@echo "  playground/scratch/ byggs men committas aldrig — läs playground/README.md"
+	@echo "  playground/scratch/ is built but never committed — read playground/README.md"
 
-# ASan + UBSan: use-after-free, buffertöverskridningar, läckor, UB.
+# ASan + UBSan: use-after-free, buffer overflows, leaks, UB.
 asan:
 	@$(MAKE) --no-print-directory MODE=asan build/asan/paratest
 	@echo "── make asan ─────────────────────────────────────────"
 	@ASAN_OPTIONS="$(ASAN_OPTIONS)" UBSAN_OPTIONS="$(UBSAN_OPTIONS)" \
 	  build/asan/paratest $(ARGS)
 
-# Valgrind memcheck. Långsammare än ASan men ser saker ASan inte ser
-# (oinitierat minne som faktiskt LÄSES, t.ex.) och kräver ingen ombyggnad.
+# Valgrind memcheck. Slower than ASan but sees things ASan does not
+# (uninitialised memory that is actually READ, for example) and needs no
+# rebuild.
 valgrind:
 	@$(MAKE) --no-print-directory MODE=debug build/debug/paratest
 	@echo "── make valgrind (memcheck) ──────────────────────────"
 	@$(VG) $(VG_COMMON) $(VG_MEM) build/debug/paratest --no-fork $(ARGS)
 
-# Helgrind: kapplöpningar och LÅSORDNINGSINVERSIONER. Det senare är varför
-# den finns kvar bredvid TSan — de två hittar delvis olika saker, och
-# helgrind kräver ingen ominstrumentering.
+# Helgrind: races and LOCK-ORDER INVERSIONS. The latter is why it stays next
+# to TSan — the two find partly different things, and helgrind needs no
+# re-instrumentation.
 helgrind:
 	@$(MAKE) --no-print-directory MODE=debug build/debug/paratest
 	@echo "── make helgrind ─────────────────────────────────────"
 	@$(VG) $(VG_COMMON) --tool=helgrind --history-level=full \
 	  build/debug/paratest --no-fork $(ARGS)
 
-# DRD: valgrinds andra kapplöpningsdetektor. Billigare minnesmässigt än
-# helgrind och bättre på att peka ut fel LÅS för rätt data.
+# DRD: valgrind's other race detector. Cheaper in memory than helgrind and
+# better at pointing out the wrong LOCK for the right data.
 drd:
 	@$(MAKE) --no-print-directory MODE=debug build/debug/paratest
 	@echo "── make drd ──────────────────────────────────────────"
 	@$(VG) $(VG_COMMON) --tool=drd --check-stack-var=yes \
 	  build/debug/paratest --no-fork $(ARGS)
 
-# ── probet: bär bygget en äkta dubbelbred CAS? ────────────────────────────
-# Inte en kanariefågel — ett PROBE, samma familj som .tsan-works. Frågan är
-# vad den här maskinen och den här kompilatorn klarar, inte om ett verktyg
-# fungerar. Tre utfall, som överallt annars.
+# ── the probe: does the build carry a genuine double-width CAS? ───────────
+# Not a canary — a PROBE, the same family as .tsan-works. The question is
+# what this machine and this compiler can do, not whether a tool works.
+# Three outcomes, as everywhere else.
 lockfree:
 	@$(MAKE) --no-print-directory MODE=release build/release/probe_lockfree >/dev/null
 	@echo "── make lockfree ─────────────────────────────────────"
 	@build/release/probe_lockfree; rc=$$?; \
 	 echo; \
 	 if [ $$rc -eq 0 ]; then \
-	   echo "  → taggade pekare ÄR lock-free här. Modul 9 kan använda dubbelbred CAS."; \
+	   echo "  → tagged pointers ARE lock-free here. Module 8 can use double-width CAS."; \
 	 elif [ $$rc -eq 2 ]; then \
-	   echo "  → taggade pekare är INTE lock-free här. Det är ett giltigt svar,"; \
-	   echo "    inte ett fel: g++ vägrar kalla en 16-bytes CAS lock-free, för att"; \
-	   echo "    en atomär LÄSNING måste kunna ske på skrivskyddat minne och"; \
-	   echo "    instruktionen alltid skriver. Det gäller både cmpxchg16b och"; \
-	   echo "    aarch64:s CASP, och ingen -march-flagga ändrar det (mätt)."; \
-	   echo "    Modul 9 får lägga taggen i pekarens oanvända högbitar i stället"; \
-	   echo "    — eller bygga den delen med clang++. Välj, och skriv ned valet."; \
+	   echo "  → tagged pointers are NOT lock-free here. That is a valid answer,"; \
+	   echo "    not an error: g++ refuses to call a 16-byte CAS lock-free, because"; \
+	   echo "    an atomic LOAD must be possible on read-only memory and the"; \
+	   echo "    instruction always writes. That holds for both cmpxchg16b and"; \
+	   echo "    aarch64's CASP, and no -march flag changes it (measured)."; \
+	   echo "    Module 8 can put the tag in the pointer's unused high bits instead"; \
+	   echo "    — or build that part with clang++. Choose, and write the choice down."; \
 	 else \
-	   echo "  → PROBET FÖLL. Inte ens atomic<T*> är lock-free. Något är fel i bygget."; \
+	   echo "  → THE PROBE FAILED. Not even atomic<T*> is lock-free. Something is wrong in the build."; \
 	   exit 1; \
 	 fi
 
-# ── kanariefåglarna: bevisa att verktygen fungerar ────────────────────────
-# Det här är repots viktigaste mål. Fem program som är TRASIGA MED FLIT, och
-# verktygen MÅSTE fälla dem. Går något av dem igenom har verktyget slutat
-# fungera, och varje grönt resultat du fått sedan dess är värdelöst.
+# ── the canaries: prove that the tools work ───────────────────────────────
+# This is the repo's most important target. Five programs that are BROKEN ON
+# PURPOSE, and the tools MUST catch them. If any of them passes, the tool has
+# stopped working, and every green result you have had since is worthless.
 canary: $(BUILD)/.tsan-works
-	@echo "══ KANARIEFÅGLAR ════════════════════════════════════════════════"
-	@echo "   fem trasiga program. verktygen MÅSTE hitta dem."
+	@echo "══ CANARIES ═════════════════════════════════════════════════════"
+	@echo "   five broken programs. the tools MUST find them."
 	@echo
 	@$(MAKE) --no-print-directory MODE=debug build/debug/canary_deadlock >/dev/null
 	@$(MAKE) --no-print-directory MODE=asan build/asan/canary_leak >/dev/null
 	@mkdir -p build
-	@printf '1/5  datakapplöpning under TSan ......... '
+	@printf '1/5  data race under TSan .................. '
 	@if [ "$(TSAN_WORKS)" != "yes" ]; then \
-	   echo "OTILLGÄNGLIG  ← TSan startar inte på $$(uname -m)."; \
+	   echo "UNAVAILABLE  ← TSan does not start on $$(uname -m)."; \
 	   echo "     $(TSAN_WHY)"; \
-	   echo "     Inte ett godkännande: inga kapplöpningar är kontrollerade här."; \
+	   echo "     Not a pass: no races have been checked here."; \
 	 elif $(MAKE) --no-print-directory MODE=tsan build/tsan/canary_race >/dev/null \
 	      && TSAN_OPTIONS="halt_on_error=1" timeout 60 build/tsan/canary_race \
 	         >/dev/null 2>build/canary_race.log; then \
-	   echo "MISSAD  ← TSan hittade INTE kapplöpningen. Sanitizern är trasig."; \
+	   echo "MISSED  ← TSan did NOT find the race. The sanitizer is broken."; \
 	   exit 1; \
-	 elif grep -q "data race" build/canary_race.log; then echo "fälld  ✓"; \
-	 else echo "OKLART  ← se build/canary_race.log"; exit 1; fi
-	@printf '2/5  låsordningsinversion (helgrind) .... '
-	@# canary_deadlock hänger ALDRIG — den kör igenom på nolltid och är ändå
-	@# trasig. Att helgrind fäller den är beviset på att verktyget hittar en
-	@# latent deadlock som inget test någonsin skulle se.
+	 elif grep -q "data race" build/canary_race.log; then echo "caught  ✓"; \
+	 else echo "UNCLEAR  ← see build/canary_race.log"; exit 1; fi
+	@printf '2/5  lock-order inversion (helgrind) ....... '
+	@# canary_deadlock NEVER hangs — it runs through in no time and is broken
+	@# anyway. helgrind catching it is the proof that the tool finds a latent
+	@# deadlock no test would ever see.
 	@#
-	@# Saknas valgrind (Pi:n har inte det) hoppas steget över med besked i
-	@# stället för att fälla grinden — men det SÄGS rakt ut. En utebliven
-	@# kontroll som ser ut som en godkänd är precis det den här filen finns
-	@# för att förhindra.
+	@# If valgrind is missing (the Pi does not have it) the step is skipped with
+	@# a notice instead of failing the gate — but it is SAID plainly. A skipped
+	@# check that looks like a passed one is exactly what this file exists to
+	@# prevent.
 	@if ! command -v $(VG) >/dev/null 2>&1; then \
-	   echo "HOPPAD  ← ingen valgrind på $$(uname -m). Kör steget på laptopen."; \
+	   echo "SKIPPED  ← no valgrind on $$(uname -m). Run the step on the laptop."; \
 	 elif timeout 120 $(VG) --tool=helgrind --error-exitcode=42 \
 	        build/debug/canary_deadlock >/dev/null 2>build/canary_deadlock.log; \
-	      grep -qi "lock order" build/canary_deadlock.log; then echo "fälld  ✓"; \
+	      grep -qi "lock order" build/canary_deadlock.log; then echo "caught  ✓"; \
 	 elif grep -qiE "Assertion .* failed|the .impossible. happened" build/canary_deadlock.log; then \
-	   echo "VERKTYGSKRASCH  ← helgrind dog internt. Den svarade inte 'nej'."; \
-	   echo "     En bugg i valgrind, inte i din kod — men i utskriften ser den"; \
-	   echo "     nästan ut som ett rent 'hittade inget'. Skilj alltid på de två:"; \
-	   echo "     ett verktyg som kraschade har inte kontrollerat någonting alls."; \
+	   echo "TOOL CRASH  ← helgrind died internally. It did not answer 'no'."; \
+	   echo "     A bug in valgrind, not in your code — but in the output it looks"; \
+	   echo "     almost like a clean 'found nothing'. Always tell the two apart:"; \
+	   echo "     a tool that crashed has not checked anything at all."; \
 	   grep -m1 -iE "Assertion .* failed|the .impossible. happened" \
 	     build/canary_deadlock.log | sed 's/^/     /'; \
 	   exit 1; \
-	 else echo "MISSAD  ← helgrind såg ingen låsordningsinversion."; \
-	   echo "     se build/canary_deadlock.log"; exit 1; fi
-	@printf '3/5  garanterad deadlock (watchdog) ..... '
+	 else echo "MISSED  ← helgrind saw no lock-order inversion."; \
+	   echo "     see build/canary_deadlock.log"; exit 1; fi
+	@printf '3/5  guaranteed deadlock (watchdog) ........ '
 	@$(MAKE) --no-print-directory MODE=debug build/debug/canary_hang >/dev/null
 	@if timeout 5 build/debug/canary_hang >/dev/null 2>&1; then \
-	   echo "MISSAD  ← programmet hängde inte. Läs om canary_hang.cpp."; exit 1; \
-	 else echo "dödad efter 5 s  ✓"; fi
-	@printf '4/5  minnesläcka under ASan ............. '
+	   echo "MISSED  ← the program did not hang. Re-read canary_hang.cpp."; exit 1; \
+	 else echo "killed after 5 s  ✓"; fi
+	@printf '4/5  memory leak under ASan ................ '
 	@if ASAN_OPTIONS="detect_leaks=1" timeout 60 build/asan/canary_leak \
 	     >/dev/null 2>build/canary_leak.log; then \
-	   echo "MISSAD  ← ASan hittade inte läckan. detect_leaks avstängd?"; exit 1; \
-	 elif grep -q "LeakSanitizer" build/canary_leak.log; then echo "fälld  ✓"; \
-	 else echo "OKLART  ← se build/canary_leak.log"; exit 1; fi
-	@printf '5/5  undantag lämnar låset taget ........ '
-	@# NY I C++-VERSIONEN. Delar verktyg med 3/5 med flit — se
-	@# tests/canary_raii.cpp om varför den ändå förtjänar en egen rad.
+	   echo "MISSED  ← ASan did not find the leak. detect_leaks turned off?"; exit 1; \
+	 elif grep -q "LeakSanitizer" build/canary_leak.log; then echo "caught  ✓"; \
+	 else echo "UNCLEAR  ← see build/canary_leak.log"; exit 1; fi
+	@printf '5/5  exception leaves the lock held ........ '
+	@# NEW IN THE C++ VERSION. Shares a tool with 3/5 on purpose — see
+	@# tests/canary_raii.cpp for why it still deserves a line of its own.
 	@$(MAKE) --no-print-directory MODE=debug build/debug/canary_raii >/dev/null
 	@if timeout 5 build/debug/canary_raii >/dev/null 2>&1; then \
-	   echo "MISSAD  ← programmet hängde inte. Läs om canary_raii.cpp."; exit 1; \
-	 else echo "dödad efter 5 s  ✓"; fi
+	   echo "MISSED  ← the program did not hang. Re-read canary_raii.cpp."; exit 1; \
+	 else echo "killed after 5 s  ✓"; fi
 	@echo
 	@if [ "$(TSAN_WORKS)" = "yes" ] && command -v $(VG) >/dev/null 2>&1; then \
-	   echo "   alla fem fälldes. verktygskedjan fungerar — du kan lita på grönt."; \
+	   echo "   all five were caught. the tool chain works — you can trust green."; \
 	 else \
-	   echo "   DELVIS KÖRD. Det som kunde köras fälldes, men den här maskinen"; \
-	   echo "   saknar verktyg (se OTILLGÄNGLIG/HOPPAD ovan). Ett grönt 'make"; \
-	   echo "   check' här täcker mindre än ett grönt på en fullt utrustad"; \
-	   echo "   maskin. Kör hela svepet någonstans där allt finns."; \
+	   echo "   PARTLY RUN. What could run was caught, but this machine lacks"; \
+	   echo "   tools (see UNAVAILABLE/SKIPPED above). A green 'make check' here"; \
+	   echo "   covers less than a green one on a fully equipped machine. Run the"; \
+	   echo "   whole sweep somewhere everything is available."; \
 	 fi
-	@echo "   loggar: build/canary_*.log"
+	@echo "   logs: build/canary_*.log"
 
-# Watchdogen: visa att en deadlock rapporteras som TIMEOUT och inte hänger CI.
+# The watchdog: show that a deadlock is reported as TIMEOUT and does not hang CI.
 canary-watchdog:
 	@$(MAKE) --no-print-directory MODE=debug build/debug/canary_hang >/dev/null
-	@printf 'watchdog dödar en hängd process ......... '
+	@printf 'the watchdog kills a hung process ........ '
 	@if timeout 5 build/debug/canary_hang >/dev/null 2>&1; then \
-	   echo "kom förbi (deadlocken råkade inte inträffa — kör igen)"; \
-	 else echo "dödad efter 5 s  ✓"; fi
+	   echo "got through (the deadlock happened not to occur — run again)"; \
+	 else echo "killed after 5 s  ✓"; fi
 
-# ── stress: race-märkta tester, många varv, under TSan ────────────────────
+# ── stress: race-tagged tests, many rounds, under TSan ────────────────────
 STRESS_REPEAT ?= 200
 stress:
 	@$(MAKE) --no-print-directory MODE=tsan build/tsan/paratest
-	@echo "── make stress ($(STRESS_REPEAT) varv, race-märkta) ──"
+	@echo "── make stress ($(STRESS_REPEAT) rounds, race-tagged) ──"
 	@TSAN_OPTIONS="$(TSAN_OPTIONS)" build/tsan/paratest --race-only \
 	  --repeat $(STRESS_REPEAT)
 
 bench:
 	@$(MAKE) --no-print-directory MODE=release build/release/play_$(PROG)
-	@echo "byggt i build/release/. mätriggen kommer i modul 6."
+	@echo "built in build/release/. the bench rig arrives in module 5."
 
-# ── grinden ───────────────────────────────────────────────────────────────
-# Det här är vad som ska vara grönt innan du committar. Kör den ofta —
-# den tar sekunder så länge biblioteket är litet.
+# ── the gate ──────────────────────────────────────────────────────────────
+# This is what must be green before you commit. Run it often — it takes
+# seconds as long as the library is small.
 check:
 	@echo "══ PARACORE CHECK ═══════════════════════════════════════════════"
 	@$(MAKE) --no-print-directory fmt-check
 	@$(MAKE) --no-print-directory test
 	@$(MAKE) --no-print-directory $(BUILD)/.tsan-works
 	@if [ "$(TSAN_WORKS)" = "yes" ]; then $(MAKE) --no-print-directory tsan; \
-	 else echo "── make tsan ── ÖVERHOPPAD: TSan startar inte på $$(uname -m)"; fi
+	 else echo "── make tsan ── SKIPPED: TSan does not start on $$(uname -m)"; fi
 	@$(MAKE) --no-print-directory asan
 	@$(MAKE) --no-print-directory canary
 	@echo
@@ -440,57 +449,63 @@ check:
 	@echo
 	@if [ "$(TSAN_WORKS)" = "yes" ] && command -v $(VG) >/dev/null 2>&1 \
 	     && command -v clang-format >/dev/null 2>&1; then \
-	   echo "══ ALLT GRÖNT ═══════════════════════════════════════════════════"; \
-	   echo "   Varje lane kördes på den här maskinen."; \
+	   echo "══ ALL GREEN ════════════════════════════════════════════════════"; \
+	   echo "   Every lane ran on this machine."; \
 	 else \
-	   echo "══ GRÖNT SÅ LÅNGT MASKINEN RÄCKER ═══════════════════════════════"; \
-	   echo "   Allt som KUNDE köras är grönt — men inte allt kunde köras."; \
-	   echo "   Se HOPPAD/OTILLGÄNGLIG/ÖVERHOPPAD ovan. Det här är inte samma"; \
-	   echo "   sak som ett grönt på en fullt utrustad maskin, och skillnaden"; \
-	   echo "   står här just för att den annars glöms bort."; \
+	   echo "══ GREEN AS FAR AS THE MACHINE REACHES ══════════════════════════"; \
+	   echo "   Everything that COULD run is green — but not everything could run."; \
+	   echo "   See SKIPPED/UNAVAILABLE above. This is not the same thing as a"; \
+	   echo "   green on a fully equipped machine, and the difference is spelled"; \
+	   echo "   out here precisely because it is otherwise forgotten."; \
 	 fi
 
-# ── verktyg ───────────────────────────────────────────────────────────────
+# ── tools ─────────────────────────────────────────────────────────────────
 SOURCES_ALL := $(shell find core sync exec ds mem bench include src tests playground \
                  \( -name '*.cpp' -o -name '*.hpp' \) 2>/dev/null | sort)
 
 fmt:
 	@command -v clang-format >/dev/null 2>&1 \
-	  || { echo "clang-format saknas på $$(uname -m) — installera den först."; exit 1; }
-	@clang-format -i $(SOURCES_ALL) && echo "formaterat: $(words $(SOURCES_ALL)) filer"
+	  || { echo "clang-format is missing on $$(uname -m) — install it first."; exit 1; }
+	@clang-format -i $(SOURCES_ALL) && echo "formatted: $(words $(SOURCES_ALL)) files"
 
-# Tre utfall, inte två. "clang-format saknas" är INTE "koden är oformaterad":
-# det första säger ingenting om koden, det andra fäller den. Att skriva
-# "FEL — kör 'make fmt'" när verktyget inte finns skickar dig att jaga en bugg
-# som inte finns, och lär dig samtidigt att ignorera raden.
+# Three outcomes, not two. "clang-format is missing" is NOT "the code is
+# unformatted": the first says nothing about the code, the second fails it.
+# Writing "ERROR — run 'make fmt'" when the tool does not exist sends you
+# chasing a bug that does not exist, and teaches you to ignore the line.
 fmt-check:
 	@if ! command -v clang-format >/dev/null 2>&1; then \
-	   echo "fmt-check ... HOPPAD — ingen clang-format på $$(uname -m)."; \
-	   echo "     Formateringen är inte kontrollerad här, inte godkänd."; \
+	   echo "fmt-check ... SKIPPED — no clang-format on $$(uname -m)."; \
+	   echo "     The formatting is not checked here, not approved."; \
 	 elif clang-format --dry-run --Werror $(SOURCES_ALL) >/dev/null 2>&1; then \
 	   echo "fmt-check ... ok"; \
 	 else \
 	   clang-format --dry-run --Werror $(SOURCES_ALL) 2>&1 | head -20; \
-	   echo "fmt-check ... FEL — kör 'make fmt'"; exit 1; \
+	   echo "fmt-check ... FAILED — run 'make fmt'"; exit 1; \
 	 fi
 
-# ── kompileringsdatabas (clangd/LSP) ──────────────────────────────────────
+# ── compilation database (clangd/LSP) ─────────────────────────────────────
 #
-# Utan compile_commands.json faller clangd tillbaka på ett naket
-# `clang++ -- <fil>`: ingen -I., ingen -Iinclude, ingen -std=c++23. Den dör
-# inte och den säger ingenting — den svarar fortfarande på completion, bara med
-# fel svar. Varje fil som inkluderar <core/mutex.hpp> blir ett rött hav, och
-# det ser ut som att LSP:n "slutat fungera".
+# Without compile_commands.json clangd falls back to a bare
+# `clang++ -- <file>`: no -I., no -Iinclude, no -std=c++23. It does not die
+# and it says nothing — it still answers completion, just with the wrong
+# answers. Every file that includes <core/mutex.hpp> becomes a sea of red,
+# and it looks as if the LSP "stopped working".
 #
-# Därför är databasen en förutsättning för `all` och skrivs om så fort någon
-# källfil eller Makefile är nyare än den. Kostar några millisekunder shell.
-# Den får ALDRIG committas — flaggorna beror på MODE och på maskinen.
+# That is why the database is a prerequisite of `all` and is rewritten as soon
+# as any source file or the Makefile is newer than it. Costs a few
+# milliseconds of shell. It must NEVER be committed — the flags depend on MODE
+# and on the machine.
+#
+# A NEW file is only in the database after the next `make` — until then
+# clangd treats it like an unknown file. After `touch tests/test_x.cpp`, run
+# `make compile_commands.json` (or plain `make`) and restart the LSP
+# (:LspRestart in nvim).
 compile_commands.json: Makefile $(LIB_SRC) $(TEST_SRC) $(CANARY_SRC) $(PROBE_SRC) $(PLAY_SRC)
 	@$(MAKE) --no-print-directory _cc_fallback
 
-# `make compile_commands` = bear-genererad, alltså de kommandon som FAKTISKT
-# kördes. Exaktare, men kräver en full ombyggnad — och den bygger canary_*.cpp,
-# så en trasig kanariefågel stoppar den. Fallbacken ovan gör det gratis.
+# `make compile_commands` = bear-generated, i.e. the commands that ACTUALLY
+# ran. More exact, but requires a full rebuild — and it builds canary_*.cpp,
+# so a broken canary stops it. The fallback above does it for free.
 compile_commands:
 	@command -v bear >/dev/null 2>&1 \
 	  && { $(MAKE) clean >/dev/null; bear -- $(MAKE) -j$(JOBS) all; } \
@@ -504,97 +519,98 @@ _cc_fallback:
 	     "$(CURDIR)" "$$f" "$(CXX)" "$(CXXFLAGS)" "$$f" >> compile_commands.json; \
 	 done
 	@printf '\n]\n' >> compile_commands.json
-	@echo "compile_commands.json skriven ($(words $(LIB_SRC)) biblioteksfiler)"
+	@echo "compile_commands.json written ($(words $(LIB_SRC)) library files)"
 
 tidy: compile_commands.json
 	@command -v clang-tidy >/dev/null 2>&1 \
-	  || { echo "clang-tidy saknas på $$(uname -m) — HOPPAD, inte godkänd."; exit 0; }
+	  || { echo "clang-tidy is missing on $$(uname -m) — SKIPPED, not approved."; exit 0; }
 	@clang-tidy -p . $(LIB_SRC) 2>&1 | grep -v '^$$' | head -60 || true
 
-# ── var är jag? ───────────────────────────────────────────────────────────
-# Läser byggplanen ur src/core/modules.cpp — samma tabell som
-# tests/test_notbuilt.cpp läser. Ett ställe, inte två.
+# ── where am I? ───────────────────────────────────────────────────────────
+# Reads the build plan from src/core/modules.cpp — the same table
+# tests/test_notbuilt.cpp reads. One place, not two. The module numbers are
+# the Arcturon track's.
 progress:
-	@echo "══ PARACORE — BYGGPLAN ══════════════════════════════════════════"
+	@echo "══ PARACORE — BUILD PLAN ════════════════════════════════════════"
 	@echo
-	@printf "  moduler byggda                  : %s av %s\n" \
+	@printf "  modules built                   : %s of %s\n" \
 	  "$$(grep -cE '^\s+\{Module::[A-Za-z]+, *true,' src/core/modules.cpp)" \
 	  "$$(grep -cE '^\s+\{Module::[A-Za-z]+, *(true|false),' src/core/modules.cpp)"
-	@printf "  rader C++ (utan tester)         : %s\n" \
+	@printf "  lines of C++ (without tests)    : %s\n" \
 	  "$$(cat $(LIB_SRC) core/*.hpp sync/*.hpp exec/*.hpp ds/*.hpp ds/detail/*.hpp \
 	       mem/*.hpp mem/detail/*.hpp bench/*.hpp include/*.hpp 2>/dev/null | wc -l)"
-	@printf "  standard / kompilator           : %s, %s\n" "$(STD)" "$$($(CXX) --version | head -1)"
+	@printf "  standard / compiler             : %s, %s\n" "$(STD)" "$$($(CXX) --version | head -1)"
 	@echo
-	@echo "  KLART — bygg aldrig om dessa:"
+	@echo "  DONE — never rebuild these:"
 	@grep -E '^\s+\{Module::[A-Za-z]+, *true,' src/core/modules.cpp \
 	  | sed -E 's/.*"(.*)".*/    \1/'
 	@printf "    %s\n" "sync/atomic.hpp + sync/lockable.hpp (header-only)" \
-	                   "core/mutex.hpp + core/thread.hpp (byggställning)" \
+	                   "core/mutex.hpp + core/thread.hpp (scaffolding)" \
 	                   "tests/para_test.[ch]pp" "Makefile + tests/canary_*.cpp"
 	@echo
-	@echo "  KVAR att bygga:"
+	@echo "  LEFT to build:"
 	@grep -E '^\s+\{Module::[A-Za-z]+, *false,' src/core/modules.cpp \
 	  | sed -E 's/.*"(.*)".*/    \1/'
 	@echo
-	@echo "  vänd raden i src/core/modules.cpp när en modul är klar —"
-	@echo "  då faller testet i tests/test_notbuilt.cpp, och det är signalen."
+	@echo "  flip the row in src/core/modules.cpp when a module is done —"
+	@echo "  then the test in tests/test_notbuilt.cpp fails, and that is the signal."
 
 arm:
 	@command -v aarch64-linux-gnu-g++ >/dev/null 2>&1 \
 	  && $(MAKE) --no-print-directory CXX=aarch64-linux-gnu-g++ MODE=release \
 	       BUILD=build/aarch64 all \
-	  || { echo "ingen aarch64-korskompilator här."; \
-	       echo "bygg nativt på Pi:n i stället — det är ändå ärligare:"; \
+	  || { echo "no aarch64 cross compiler here."; \
+	       echo "build natively on the Pi instead — it is more honest anyway:"; \
 	       echo "    ssh gunnar 'cd ~/dev/Paracore && make test'"; }
 
 clean:
 	@rm -rf build
-	@echo "build/ borta"
+	@echo "build/ removed"
 
 distclean: clean
 	@rm -f compile_commands.json
-	@echo "compile_commands.json borta"
+	@echo "compile_commands.json removed"
 
 help:
-	@echo "Paracore — make-mål   ($(STD), $(CXX))"
+	@echo "Paracore — make targets   ($(STD), $(CXX))"
 	@echo
-	@echo "  BYGGA"
-	@echo "    make                  bibliotek + tester + playground (MODE=$(MODE))"
-	@echo "    make run              kör playground/hello.cpp"
-	@echo "    make run PROG=counter kör playground/counter.cpp"
+	@echo "  BUILD"
+	@echo "    make                  library + tests + playground (MODE=$(MODE))"
+	@echo "    make run              run playground/hello.cpp"
+	@echo "    make run PROG=counter run playground/counter.cpp"
 	@echo "    make run PROG=falsesharing ARGS=8"
 	@echo
-	@echo "  LEKPLATSEN  (playground/ — se playground/README.md)"
-	@echo "    make list             vad som ligger där"
-	@echo "    make new PROG=minlek  skapa playground/minlek.cpp från mall"
-	@echo "    make tsan-run PROG=x  kör experimentet under ThreadSanitizer"
-	@echo "    make asan-run PROG=x  kör det under ASan + UBSan"
+	@echo "  PLAYGROUND  (playground/ — see playground/README.md)"
+	@echo "    make list             what is in there"
+	@echo "    make new PROG=myexp   create playground/myexp.cpp from a template"
+	@echo "    make tsan-run PROG=x  run the experiment under ThreadSanitizer"
+	@echo "    make asan-run PROG=x  run it under ASan + UBSan"
 	@echo
-	@echo "  TESTA"
-	@echo "    make test             testsviten, watchdog fångar deadlocks"
-	@echo "    make tsan             + ThreadSanitizer (kapplöpningar, låsordning)"
-	@echo "    make asan             + AddressSanitizer och UBSan (läckor, UB)"
+	@echo "  TEST"
+	@echo "    make test             the test suite, the watchdog catches deadlocks"
+	@echo "    make tsan             + ThreadSanitizer (races, lock order)"
+	@echo "    make asan             + AddressSanitizer and UBSan (leaks, UB)"
 	@echo "    make valgrind         + memcheck"
-	@echo "    make helgrind         + helgrind (kapplöpningar, låsordning)"
+	@echo "    make helgrind         + helgrind (races, lock order)"
 	@echo "    make drd              + DRD"
-	@echo "    make stress           race-märkta tester × $(STRESS_REPEAT) under TSan"
-	@echo "    make test ARGS=mutex  bara tester vars namn innehåller 'mutex'"
+	@echo "    make stress           race-tagged tests × $(STRESS_REPEAT) under TSan"
+	@echo "    make test ARGS=mutex  only tests whose name contains 'mutex'"
 	@echo
-	@echo "  BEVISA ATT VERKTYGEN FUNGERAR"
-	@echo "    make canary           fem trasiga program som MÅSTE fällas"
-	@echo "    make canary-watchdog  visa att en hängd process dödas"
-	@echo "    make lockfree         bär bygget en äkta dubbelbred CAS?"
+	@echo "  PROVE THAT THE TOOLS WORK"
+	@echo "    make canary           five broken programs that MUST be caught"
+	@echo "    make canary-watchdog  show that a hung process is killed"
+	@echo "    make lockfree         does the build carry a genuine double-width CAS?"
 	@echo
-	@echo "  GRIND"
+	@echo "  GATE"
 	@echo "    make check            fmt + test + tsan + asan + canary + lockfree"
 	@echo
-	@echo "  ÖVRIGT"
-	@echo "    make progress         var i byggplanen du är"
+	@echo "  OTHER"
+	@echo "    make progress         where you are in the build plan"
 	@echo "    make fmt / fmt-check  clang-format"
-	@echo "    make tidy             clang-tidy (concurrency-checkarna)"
-	@echo "    make compile_commands för clangd i editorn"
-	@echo "    make bench            release-bygge"
-	@echo "    make arm              aarch64 (eller besked om hur du gör på Pi:n)"
-	@echo "    make clean            ta bort build/"
+	@echo "    make tidy             clang-tidy (the concurrency checks)"
+	@echo "    make compile_commands for clangd in the editor"
+	@echo "    make bench            release build"
+	@echo "    make arm              aarch64 (or instructions for the Pi)"
+	@echo "    make clean            remove build/"
 	@echo
-	@echo "  MODE=debug|release|tsan|asan   NATIVE=1 för -march=native i release"
+	@echo "  MODE=debug|release|tsan|asan   NATIVE=1 for -march=native in release"

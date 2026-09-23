@@ -1,41 +1,41 @@
-/* sync/rwlock.hpp — många läsare eller en skrivare.
+/* sync/rwlock.hpp — many readers or one writer.
  *
- * STATUS: STUB — du bygger dem i MODUL 5 (AMP kapitel 8).
+ * STATUS: STUB — you build them in MODULE 4 (AMP chapter 8).
  *
- * Modulens hela poäng ligger i skillnaden mellan de två varianterna, och den
- * skillnaden är MÄTBAR — det är inte en designdiskussion:
+ * The module's whole point lies in the difference between the two variants,
+ * and that difference is MEASURABLE — it is not a design discussion:
  *
- *   ReaderPreferenceRwLock  nya läsare får gå in även när en skrivare väntar.
- *                           Maximal läsgenomströmning, och skrivaren kan
- *                           svälta obegränsat. Starta åtta läsare och en
- *                           skrivare och mät skrivarens väntetid i p99.
- *                           Siffran är obehaglig. Den ska vara det.
- *   FairRwLock              kö: en väntande skrivare stänger dörren för nya
- *                           läsare. Ingen svält, lägre genomströmning.
- *                           Mät vad rättvisan kostar.
+ *   ReaderPreferenceRwLock  new readers may enter even while a writer waits.
+ *                           Maximum read throughput, and the writer can
+ *                           starve without bound. Start eight readers and one
+ *                           writer and measure the writer's wait time at
+ *                           p99. The number is unpleasant. It is meant to be.
+ *   FairRwLock              a queue: a waiting writer closes the door to new
+ *                           readers. No starvation, lower throughput.
+ *                           Measure what fairness costs.
  *
- * Ett rwlock är inte gratis snabbare än en mutex. Läsarna måste ändå skriva
- * till en delad räknare för att räkna sig in, och den skrivningen kostar
- * samma cachelinje-pingpong som ett vanligt lås. Ett rwlock vinner först när
- * de kritiska LÄSsektionerna är långa. Mät var brytpunkten ligger.
+ * An rwlock is not faster than a mutex for free. The readers still have to
+ * write to a shared counter to check themselves in, and that write costs the
+ * same cache-line ping-pong as an ordinary lock. An rwlock only wins when the
+ * critical READ sections are long. Measure where the break-even point is.
  *
- * ── Två referenser att mäta mot, och en fälla ─────────────────────────────
+ * ── Two references to measure against, and a trap ─────────────────────────
  *
- * std::shared_mutex finns sedan C++17. Vilken av de två strategierna den
- * använder är OSPECIFICERAT — libstdc++ bygger den på pthread_rwlock, vars
- * policy i sin tur är en glibc-inställning. Så din mätning av skrivarsvält
- * mot std::shared_mutex mäter din glibc, inte språket. Skriv det i rapporten;
- * det är en bättre poäng än siffran.
+ * std::shared_mutex has existed since C++17. Which of the two strategies it
+ * uses is UNSPECIFIED — libstdc++ builds it on pthread_rwlock, whose policy in
+ * turn is a glibc setting. So your measurement of writer starvation against
+ * std::shared_mutex measures your glibc, not the language. Write that in the
+ * report; it is a better point than the number.
  *
- * Båda uppfyller para::SharedLockable, så std::shared_lock och
- * std::unique_lock fungerar rakt av:
+ * Both satisfy para::SharedLockable, so std::shared_lock and std::unique_lock
+ * work straight away:
  *
- *     std::shared_lock r{rw};     // läsare
- *     std::unique_lock w{rw};     // skrivare
+ *     std::shared_lock r{rw};     // reader
+ *     std::unique_lock w{rw};     // writer
  *
- * Att låsa upp fel sida — unlock() på ett lås du tog med lock_shared() — är
- * den bugg som finns i varje handskriven rwlock-användning. Med de två
- * vakterna kan den inte skrivas.
+ * Unlocking the wrong side — unlock() on a lock you took with lock_shared() —
+ * is the bug in every handwritten rwlock use. With the two guards it cannot
+ * be written.
  */
 #ifndef PARACORE_SYNC_RWLOCK_HPP
 #define PARACORE_SYNC_RWLOCK_HPP
@@ -66,11 +66,11 @@ public:
 private:
     Mutex m_;
     CondVar cv_;
-    /* [[maybe_unused]] bara så länge klassen är en stub: clang fäller annars
-     * -Wunused-private-field, och den varningen är värd att ha kvar för
-     * riktig kod. Ta bort attributet när modul 5 använder fälten. (g++ har
-     * ingen motsvarande varning — att clang har den är ett av flera skäl att
-     * bygga med båda. Se README, "Verifierat på".) */
+    /* [[maybe_unused]] only while the class is a stub: clang otherwise fails
+     * on -Wunused-private-field, and that warning is worth keeping for real
+     * code. Remove the attribute when module 4 uses the fields. (g++ has no
+     * equivalent warning — that clang has it is one of several reasons to
+     * build with both. See README, "Verified on".) */
     [[maybe_unused]] unsigned readers_{0};
     [[maybe_unused]] bool writer_{false};
 };
@@ -96,14 +96,14 @@ private:
     Mutex m_;
     CondVar readers_ok_;
     CondVar writers_ok_;
-    /* Se kommentaren i ReaderPreferenceRwLock om [[maybe_unused]]. */
+    /* See the comment in ReaderPreferenceRwLock about [[maybe_unused]]. */
     [[maybe_unused]] unsigned readers_{0};
     [[maybe_unused]] unsigned waiting_writers_{0};
     [[maybe_unused]] bool writer_{false};
 };
 
 static_assert(SharedLockable<ReaderPreferenceRwLock> && SharedLockable<FairRwLock>,
-              "ett rwlock måste uppfylla SharedLockable — annars fungerar inte std::shared_lock");
+              "an rwlock must satisfy SharedLockable — otherwise std::shared_lock does not work");
 
 } // namespace para
 

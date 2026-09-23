@@ -1,39 +1,39 @@
-/* core/mutex.hpp — det blockerande låset, och monitorn.
+/* core/mutex.hpp — the blocking lock, and the monitor.
  *
- * STATUS: implementerad (byggställning).
+ * STATUS: implemented (scaffolding).
  *
- * Byggställning: en pthread_mutex bakom en C++-yta, för att testriggen och
- * allt annat ska ha ett lås som fungerar från dag ett.
+ * Scaffolding: a pthread_mutex behind a C++ surface, so that the test rig and
+ * everything else has a lock that works from day one.
  *
- * Skillnaden mot sync/spinlock.hpp är hela poängen med modul 4: det här låset
- * PARKERAR tråden i kärnan (futex) när det är taget, spinlåsen bränner CPU.
- * Vilket som vinner beror på hur länge den kritiska sektionen är, och det är
- * en mätning — inte en åsikt.
+ * The difference from sync/spinlock.hpp is the whole point of module 3: this
+ * lock PARKS the thread in the kernel (futex) when it is held, the spinlocks
+ * burn CPU. Which one wins depends on how long the critical section is, and
+ * that is a measurement — not an opinion.
  *
- * ── Varför inte bara std::mutex? ──────────────────────────────────────────
+ * ── Why not just std::mutex? ──────────────────────────────────────────────
  *
- * Två skäl, och båda är kursinnehåll:
+ * Two reasons, and both are course content:
  *
- *  1. PTHREAD_MUTEX_ERRORCHECK. Att låsa ett std::mutex rekursivt är
- *     odefinierat beteende: standarden säger ingenting, och i praktiken
- *     hänger programmet. ERRORCHECK gör det till ett FEL på en gång, med
- *     rad och allt — i stället för en deadlock du felsöker klockan två på
- *     natten. Debugbygget (PARA_MUTEX_CHECKED) sätter den åt dig.
+ *  1. PTHREAD_MUTEX_ERRORCHECK. Locking a std::mutex recursively is undefined
+ *     behaviour: the standard says nothing, and in practice the program
+ *     hangs. ERRORCHECK turns it into an ERROR right away, with the line and
+ *     all — instead of a deadlock you debug at two in the morning. The debug
+ *     build (PARA_MUTEX_CHECKED) sets it for you.
  *
- *  2. CLOCK_MONOTONIC i CondVar. std::condition_variable::wait_until mäter
- *     mot system_clock, som NTP får justera bakåt mitt i din väntan.
- *     pthread_cond med CLOCK_MONOTONIC gör inte det. Samma skäl som
+ *  2. CLOCK_MONOTONIC in CondVar. std::condition_variable::wait_until measures
+ *     against system_clock, which NTP may adjust backwards in the middle of
+ *     your wait. pthread_cond with CLOCK_MONOTONIC does not. Same reason as
  *     bench::now_ns().
  *
- * Mutex uppfyller para::Lockable, så std::lock_guard, std::unique_lock och
- * std::scoped_lock fungerar rakt av — och det är så du ska använda den.
- * Ett handskrivet unlock() i en funktion med tidiga returer är den bugg RAII
- * finns för att göra oskrivbar. Kanariefågel 5 visar vad som händer utan.
+ * Mutex satisfies para::Lockable, so std::lock_guard, std::unique_lock and
+ * std::scoped_lock work straight away — and that is how you should use it. A
+ * handwritten unlock() in a function with early returns is the bug RAII
+ * exists to make unwritable. Canary 5 shows what happens without it.
  *
  *     para::Mutex m;
  *     {
- *         std::lock_guard guard{m};      // låser
- *         ...                            // och låser upp, även vid throw
+ *         std::lock_guard guard{m};      // locks
+ *         ...                            // and unlocks, even on throw
  *     }
  */
 #ifndef PARACORE_CORE_MUTEX_HPP
@@ -61,40 +61,42 @@ public:
     Mutex(Mutex &&) = delete;
     Mutex &operator=(Mutex &&) = delete;
 
-    /* BasicLockable/Lockable. Returnerar ingenting, precis som standarden
-     * kräver — ett fel här (rekursivt lås i ett ERRORCHECK-bygge, unlock från
-     * fel tråd) är ingen returkod någon hade hanterat. Det är ett programfel,
-     * och det abort:ar med besked. Testriggen rapporterar det som SIGNAL med
-     * testets namn, vilket är mer information än en ignorerad status. */
+    /* BasicLockable/Lockable. Returns nothing, exactly as the standard
+     * requires — an error here (recursive lock in an ERRORCHECK build, unlock
+     * from the wrong thread) is not a return code anyone would have handled.
+     * It is a programming error, and it aborts with a message. The test rig
+     * reports it as SIGNAL with the test's name, which is more information
+     * than an ignored status. */
     void lock() noexcept;
     [[nodiscard]] bool try_lock() noexcept;
     void unlock() noexcept;
 
-    /* Bara för den som bygger ovanpå (CondVar, och dina egna monitorer). */
+    /* Only for those who build on top (CondVar, and your own monitors). */
     [[nodiscard]] pthread_mutex_t *native_handle() noexcept { return &m_; }
 
 private:
     pthread_mutex_t m_{};
 };
 
-static_assert(Lockable<Mutex>, "Mutex måste uppfylla Lockable — se sync/lockable.hpp");
+static_assert(Lockable<Mutex>, "Mutex must satisfy Lockable — see sync/lockable.hpp");
 
-/* Villkorsvariabel.
+/* Condition variable.
  *
- * Predikatet MÅSTE läsas i en while-loop. Ett `if` här är inte en stilfråga
- * utan en bugg: spuriösa väckningar är specificerade, och mellan signal och
- * uppvaknande hinner någon annan ändra tillståndet. Det är monitorns enda
- * bevisförpliktelse och den bryts hela tiden. Se modul 5.
+ * The predicate MUST be read in a while loop. An `if` here is not a style
+ * question but a bug: spurious wakeups are specified, and between the signal
+ * and the wakeup someone else has time to change the state. It is the
+ * monitor's only proof obligation and it is broken all the time. See
+ * module 4.
  *
- * DÄRFÖR FINNS PREDIKAT-ÖVERLAGRINGEN, och den är C++:s riktiga svar på
- * regeln: den skriver while-loopen åt dig, så buggen inte går att skriva.
+ * THAT IS WHY THE PREDICATE OVERLOAD EXISTS, and it is C++'s real answer to
+ * the rule: it writes the while loop for you, so the bug cannot be written.
  *
- *     cv.wait(lk, [&] { return ready; });      // föredras
+ *     cv.wait(lk, [&] { return ready; });      // preferred
  *
- *     while (!ready) { cv.wait(lk); }          // samma sak, för hand
+ *     while (!ready) { cv.wait(lk); }          // the same thing, by hand
  *
- * Skriv den för hand EN gång, i modul 5, och använd sedan predikatformen
- * resten av kursen. Poängen är att veta vad den expanderar till. */
+ * Write it by hand ONCE, in module 4, and then use the predicate form for the
+ * rest of the course. The point is to know what it expands to. */
 class CondVar {
 public:
     CondVar() noexcept;
@@ -112,11 +114,11 @@ public:
         }
     }
 
-    /* Status::TimedOut om tiden gick ut, Status::Ok om vi väcktes. */
+    /* Status::TimedOut if the time ran out, Status::Ok if we were woken. */
     [[nodiscard]] Status wait_for(std::unique_lock<Mutex> &lk,
                                   std::chrono::milliseconds timeout) noexcept;
 
-    /* true om predikatet höll när vi gav upp, false om tiden tog slut. */
+    /* true if the predicate held when we gave up, false if time ran out. */
     template <class Predicate>
     [[nodiscard]] bool wait_for(std::unique_lock<Mutex> &lk, std::chrono::milliseconds timeout,
                                 Predicate stop_waiting) noexcept {

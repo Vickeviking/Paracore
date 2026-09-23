@@ -1,34 +1,37 @@
-/* ds/hashmap.hpp — fyra hashtabeller, i den ordning AMP kapitel 13 motiverar dem.
+/* ds/hashmap.hpp — four hash tables, in the order AMP chapter 13 motivates
+ * them.
  *
- * STATUS: STUB — du bygger dem i MODUL 10.
+ * STATUS: STUB — you build them in MODULE 9.
  *
- *   GlobalMap<K,V>     ett lås om hela tabellen. Referensen.
- *   StripedMap<K,V>    L lås över N hinkar, lock[hash % L]. Den första riktiga
- *                      skalningsvinsten. Svep L = 1, 8, 64, 1024 och hitta där
- *                      vinsten planar ut — svaret handlar om cachelinjer, inte
- *                      om lås.
- *   RefinableMap<K,V>  striped OCH omstrukturerbar. Modulens svåra del: att
- *                      fördubbla tabellen medan andra trådar läser. Ta alla lås
- *                      i bestämd ordning, markera med en ägarflagga, och låt en
- *                      tråd som redan börjat på den gamla tabellen upptäcka det
- *                      och göra om. Mät OMSTRUKTURERINGSKLIPPET: genomströmning
- *                      sekund för sekund runt en resize.
- *   SplitOrderedMap<K,V>  lock-free, rekursiv split-ordering (Shalev–Shavit).
- *                      Den vackra idén: håll ALLA element i EN lock-free lista
- *                      sorterad på BITREVERSERAD nyckel, och låt hinkarna vara
- *                      pekare in i listan. Att fördubbla hinkarna flyttar då
- *                      inte ett enda element — den nya hinken är bara en ny
- *                      ingångspunkt i en lista som redan är rätt sorterad.
+ *   GlobalMap<K,V>     one lock around the whole table. The reference.
+ *   StripedMap<K,V>    L locks over N buckets, lock[hash % L]. The first real
+ *                      scaling win. Sweep L = 1, 8, 64, 1024 and find where
+ *                      the win flattens out — the answer is about cache
+ *                      lines, not about locks.
+ *   RefinableMap<K,V>  striped AND resizable. The module's hard part:
+ *                      doubling the table while other threads read. Take all
+ *                      locks in a fixed order, mark with an owner flag, and
+ *                      let a thread that already started on the old table
+ *                      notice and retry. Measure the RESIZE DIP: throughput
+ *                      second by second around a resize.
+ *   SplitOrderedMap<K,V>  lock-free, recursive split-ordering (Shalev–Shavit).
+ *                      The beautiful idea: keep ALL elements in ONE lock-free
+ *                      list sorted on the BIT-REVERSED key, and let the
+ *                      buckets be pointers into the list. Doubling the
+ *                      buckets then moves not a single element — the new
+ *                      bucket is just a new entry point into a list that is
+ *                      already correctly sorted.
  *
- * Listan i SplitOrderedMap ÄR modul 7:s Harris-lista. Återanvänd den. Går den
- * inte att återanvända är det ett gränssnittsfel i modul 7, och det är värt
- * att gå tillbaka och fixa där i stället för att kopiera koden hit.
+ * The list in SplitOrderedMap IS module 6's Harris list. Reuse it. If it
+ * cannot be reused, that is an interface bug in module 6, and it is worth
+ * going back and fixing it there instead of copying the code here.
  *
- * OCH NU ÄR DET KOMPILATORN SOM SÄGER IFRÅN. I C var "återanvänd listan" ett
- * råd i en kommentar, och kopiera-klistra var lika lätt. Här är
- * SplitOrderedMap deklarerad med en LockFreeSet<SplitKey> som medlem: den KAN
- * inte byggas utan modul 7:s lista, och om gränssnittet inte räcker till
- * märker du det när du skriver klassen — inte efter att du kopierat 200 rader.
+ * AND THE COMPILER SHOULD BE THE ONE TO OBJECT. In C "reuse the list" was
+ * advice in a comment, and copy-paste was just as easy. Here, give
+ * SplitOrderedMap a LockFreeSet<SplitKey> as a member when you build it: it
+ * then CANNOT be built without module 6's list, and if the interface is not
+ * enough you notice while writing the class — not after you have copied 200
+ * lines. (The stub below does not have that member yet.)
  */
 #ifndef PARACORE_DS_HASHMAP_HPP
 #define PARACORE_DS_HASHMAP_HPP
@@ -70,9 +73,9 @@ public:
     static constexpr Module kModule = Module::HashMaps;
     static constexpr const char *name() noexcept { return "striped"; }
 
-    /* `stripes` = 0 betyder "välj själv utifrån hardware_concurrency". Att
-     * den defaulten finns är bekvämt och farligt: mät ALDRIG ett svep där du
-     * låtit biblioteket välja, för då varierar L med maskinen. */
+    /* `stripes` = 0 means "choose from hardware_concurrency". That the
+     * default exists is convenient and dangerous: NEVER measure a sweep where
+     * you let the library choose, because then L varies with the machine. */
     explicit StripedMap(std::size_t buckets = 1024, unsigned stripes = 0) noexcept
         : buckets_(buckets), stripes_(stripes) {}
     StripedMap(const StripedMap &) = delete;
@@ -84,9 +87,9 @@ public:
     [[nodiscard]] std::size_t size_approx() const noexcept;
 
 private:
-    /* Låsen i CacheAligned, annars mäter du falsk delning mellan lås och
-     * tror att du mäter kontention. Det är modulens första fälla och den
-     * kostar ungefär en dag om man inte vet om den. */
+    /* The locks in CacheAligned, otherwise you measure false sharing between
+     * locks and think you are measuring contention. It is the module's first
+     * trap and it costs about a day if you do not know about it. */
     std::vector<CacheAligned<Mutex>> locks_;
     std::size_t buckets_;
     unsigned stripes_;
@@ -108,8 +111,8 @@ public:
     [[nodiscard]] Result<V> remove(const K &key) noexcept;
     [[nodiscard]] std::size_t size_approx() const noexcept;
 
-    /* Mätriggen vill veta NÄR en resize skedde, för att kunna rita klippet.
-     * En räknare är billigare än en logg och räcker. */
+    /* The bench rig wants to know WHEN a resize happened, to be able to draw
+     * the dip. A counter is cheaper than a log and is enough. */
     [[nodiscard]] std::size_t resize_count() const noexcept;
 
 private:
@@ -135,9 +138,9 @@ public:
     [[nodiscard]] Result<V> remove(const K &key) noexcept;
     [[nodiscard]] std::size_t size_approx() const noexcept;
 
-    /* Bitreverserad nyckel. Statisk och publik med flit: den går att
-     * enhetstesta utan att bygga hela tabellen, och den ÄR modulens svåraste
-     * enskilda rad. Testa den först. */
+    /* Bit-reversed key. Static and public on purpose: it can be unit tested
+     * without building the whole table, and it IS the module's hardest single
+     * line. Test it first. */
     [[nodiscard]] static std::uint64_t split_order_key(std::uint64_t hash) noexcept;
 
 private:

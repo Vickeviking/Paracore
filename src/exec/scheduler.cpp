@@ -1,6 +1,6 @@
 /* scheduler.cpp
  *
- * MODUL 12 fyller den här filen — kursens slutprov.
+ * MODULE 11 fills this file — the course's final exam.
  */
 #include <exec/scheduler.hpp>
 

@@ -11,7 +11,7 @@
 #include <cstring>
 #include <ctime>
 
-/* ── registret ──────────────────────────────────────────────────────────── */
+/* ── the registry ──────────────────────────────────────────────────────────── */
 
 namespace {
 
@@ -26,12 +26,12 @@ struct Entry {
     int line;
 };
 
-/* Rå array och inte std::vector, med flit: registreringen sker under statisk
- * initialisering, och en std::vector som växer då beror på att dess egen
- * konstruktor redan körts. Det är "static initialization order fiasco", och
- * en fast array med konstant initialisering har ingen konstruktor att vänta
- * på. Samma skäl som att g_count är en int och inte en std::atomic: all
- * registrering sker före main, på en tråd. */
+/* A raw array and not a std::vector, on purpose: registration happens during
+ * static initialisation, and a std::vector growing then depends on its own
+ * constructor having run already. That is the "static initialization order
+ * fiasco", and a fixed array with constant initialisation has no constructor
+ * to wait for. Same reason g_count is an int and not a std::atomic: all
+ * registration happens before main, on one thread. */
 Entry g_tests[kMaxTests];
 int g_count = 0;
 
@@ -41,7 +41,7 @@ namespace para::test {
 
 void register_test(const char *name, Fn fn, Tag tag, const char *file, int line) noexcept {
     if (g_count >= kMaxTests) {
-        std::fprintf(stderr, "para_test: fler än %d tester; höj kMaxTests\n", kMaxTests);
+        std::fprintf(stderr, "para_test: more than %d tests; raise kMaxTests\n", kMaxTests);
         _exit(2);
     }
     g_tests[g_count] = Entry{name, fn, tag, file, line};
@@ -61,7 +61,7 @@ void fail(const char *file, int line, const char *fmt, ...) noexcept {
 
 } // namespace para::test
 
-/* ── körning ────────────────────────────────────────────────────────────── */
+/* ── running ────────────────────────────────────────────────────────────── */
 
 namespace {
 
@@ -89,9 +89,9 @@ RunResult run_forked(const para::test::Fn fn, unsigned timeout_ms) noexcept {
         _exit(0);
     }
 
-    /* Föräldern pollar. En sekunds upplösning hade varit enklare, men då
-     * mäter vi inte testets tid — och testtiden är hur man ser att ett test
-     * håller på att bli en deadlock innan det blir det. */
+    /* The parent polls. One-second resolution would have been simpler, but
+     * then we would not measure the test's time — and the test time is how
+     * you see that a test is turning into a deadlock before it becomes one. */
     constexpr long kPollNs = 500 * 1000;
     const std::uint64_t deadline = t0 + static_cast<std::uint64_t>(timeout_ms) * 1000000ULL;
     int status = 0;
@@ -129,13 +129,13 @@ RunResult run_forked(const para::test::Fn fn, unsigned timeout_ms) noexcept {
 }
 
 void usage(const char *argv0) noexcept {
-    std::printf("användning: %s [flaggor] [filter]\n"
-                "  --list             lista testerna och sluta\n"
-                "  --repeat N         kör varje test N gånger (default 1)\n"
+    std::printf("usage: %s [options] [filter]\n"
+                "  --list             list the tests and exit\n"
+                "  --repeat N         run every test N times (default 1)\n"
                 "  --timeout MS       watchdog per test (default %u)\n"
-                "  --race-only        kör bara PARA_TEST_RACE-märkta tester\n"
-                "  --no-fork          kör i processen (för valgrind utan trace-children)\n"
-                "  filter             delsträng som testnamnet måste innehålla\n",
+                "  --race-only        run only PARA_TEST_RACE-tagged tests\n"
+                "  --no-fork          run in-process (for valgrind without trace-children)\n"
+                "  filter             substring the test name must contain\n",
                 argv0, kDefaultTimeoutMs);
 }
 
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
     int passed = 0;
     int failed = 0;
     int skipped = 0;
-    std::printf("paracore: %d registrerade tester, watchdog %u ms, %u varv\n", g_count, timeout_ms,
+    std::printf("paracore: %d registered tests, watchdog %u ms, %u rounds\n", g_count, timeout_ms,
                 repeat);
 
     for (int t = 0; t < g_count; ++t) {
@@ -210,15 +210,15 @@ int main(int argc, char **argv) {
                 }
                 break;
             case Outcome::Fail:
-                std::printf("  FEL      %-44s %7.1f ms   (%s:%d)\n", e.name, res.ms, e.file,
+                std::printf("  FAIL     %-44s %7.1f ms   (%s:%d)\n", e.name, res.ms, e.file,
                             e.line);
                 ++failed;
                 r = repeat;
                 break;
             case Outcome::Timeout:
-                std::printf("  TIMEOUT  %-44s %7.1f ms   MÖJLIG DEADLOCK — %s:%d\n", e.name, res.ms,
-                            e.file, e.line);
-                std::printf("           kör: valgrind --tool=helgrind för låsordningen\n");
+                std::printf("  TIMEOUT  %-44s %7.1f ms   POSSIBLE DEADLOCK — %s:%d\n", e.name,
+                            res.ms, e.file, e.line);
+                std::printf("           run: valgrind --tool=helgrind for the lock order\n");
                 ++failed;
                 r = repeat;
                 break;
@@ -232,9 +232,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    std::printf("\n%d ok, %d fel, %d hoppade\n", passed, failed, skipped);
+    std::printf("\n%d ok, %d failed, %d skipped\n", passed, failed, skipped);
     if (passed == 0 && failed == 0) {
-        std::printf("INGA TESTER KÖRDES — det är ett fel, inte ett grönt resultat.\n");
+        std::printf("NO TESTS RAN — that is a failure, not a green result.\n");
         return 1;
     }
     return failed == 0 ? 0 : 1;

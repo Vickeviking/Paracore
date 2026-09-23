@@ -1,4 +1,4 @@
-<title>Paracore Kartan</title>
+<title>Paracore Map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
@@ -69,24 +69,28 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
 
 <header class="top">
   <div class="wrap">
-    <span class="eyebrow">Paracore · tre kartor · 8 september 2026</span>
-    <h1>Beroendena, böckerna och de nitton veckorna</h1>
-    <p class="sub">Tre saker som inte går att se i en textlista: vilken väg beroendena får peka,
-       vilken bok varje modul faktiskt skickar dig till, och var kalendern tar slut.</p>
+    <span class="eyebrow">Paracore · three maps · 8 September 2026 · historical snapshot</span>
+    <h1>The dependencies, the books and the nineteen weeks</h1>
+    <p class="sub">Three things you cannot see in a text list: which way the dependencies may point,
+       which book each module actually sends you to, and where the calendar ends.</p>
+    <p class="sub"><strong>Historical snapshot.</strong> Drawn on 8 Sep 2026 from the C version and the
+       old twelve-module plan, so file names end in <code>.h</code> and the module numbers (M1–M12) are
+       one higher than today's track numbers from M2 on (old M1, the gate, was removed on 13 Sep).
+       The dependency rule in section 01 still holds.</p>
   </div>
 </header>
 
 <div class="wrap">
 
 <section>
-  <div class="shead"><span class="n">01</span><h2>Beroenderiktningen</h2></div>
-  <p class="prose">Regeln är en rad lång och den är den enda arkitekturregeln repot har:
-     <strong>pilarna får bara peka nedåt.</strong> <code>ds/</code> får använda
-     <code>mem/</code> och <code>sync/</code>; ingen av dem får någonsin nämna
-     <code>ds/</code>. Bygget fäller ett brott.</p>
+  <div class="shead"><span class="n">01</span><h2>The dependency direction</h2></div>
+  <p class="prose">The rule is one line long and it is the only architecture rule the repo has:
+     <strong>the arrows may only point downwards.</strong> <code>ds/</code> may use
+     <code>mem/</code> and <code>sync/</code>; neither of them may ever mention
+     <code>ds/</code>. The build fails a violation.</p>
 
   <figure>
-    <svg viewBox="0 0 720 470" role="img" aria-label="Fem lager staplade: core underst, sedan sync, mem, ds och exec överst. Pilar pekar bara nedåt, från högre lager till lägre. bench står vid sidan och mäter alla lager.">
+    <svg viewBox="0 0 720 470" role="img" aria-label="Five layers stacked: core at the bottom, then sync, mem, ds and exec at the top. Arrows only point downwards, from higher layers to lower. bench stands at the side and measures all layers.">
       <defs>
         <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
@@ -109,19 +113,19 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
       <!-- mem -->
       <rect x="130" y="194" width="330" height="56" rx="4" fill="var(--surface)" stroke="var(--gap)" stroke-width="2"/>
       <text x="146" y="216" font-family="var(--mono)" font-size="13" font-weight="700" fill="var(--gap)">mem/</text>
-      <text x="146" y="236" font-family="var(--mono)" font-size="11" fill="var(--muted)">reclaim.h · M9 — hazard pointers, epoker</text>
+      <text x="146" y="236" font-family="var(--mono)" font-size="11" fill="var(--muted)">reclaim.h · M9 — hazard pointers, epochs</text>
 
       <!-- sync -->
       <rect x="130" y="282" width="330" height="56" rx="4" fill="var(--sunk)" stroke="currentColor" stroke-width="1"/>
       <text x="146" y="304" font-family="var(--mono)" font-size="13" font-weight="700" fill="currentColor">sync/</text>
-      <text x="146" y="324" font-family="var(--mono)" font-size="11" fill="var(--muted)">atomic.h KLAR  spinlock·M4  rwlock/semaphore·M5</text>
+      <text x="146" y="324" font-family="var(--mono)" font-size="11" fill="var(--muted)">atomic.h DONE  spinlock·M4  rwlock/semaphore·M5</text>
 
       <!-- core -->
       <rect x="130" y="370" width="330" height="56" rx="4" fill="var(--sunk)" stroke="currentColor" stroke-width="1"/>
       <text x="146" y="392" font-family="var(--mono)" font-size="13" font-weight="700" fill="currentColor">core/</text>
-      <text x="146" y="412" font-family="var(--mono)" font-size="11" fill="var(--muted)">status/thread/mutex KLAR  barrier·M11  task·M5</text>
+      <text x="146" y="412" font-family="var(--mono)" font-size="11" fill="var(--muted)">status/thread/mutex DONE  barrier·M11  task·M5</text>
 
-      <!-- nedåtpilar -->
+      <!-- downward arrows -->
       <g stroke="currentColor" stroke-width="1.5" fill="none" color="currentColor">
         <line x1="200" y1="74" x2="200" y2="100" marker-end="url(#a)"/>
         <line x1="200" y1="250" x2="200" y2="276" marker-end="url(#a)"/>
@@ -129,20 +133,20 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
       </g>
       <line x1="200" y1="162" x2="200" y2="188" stroke="var(--gap)" stroke-width="2.5" fill="none" marker-end="url(#ac)"/>
 
-      <text x="212" y="92" font-size="11" fill="var(--muted)" font-family="var(--mono)">får bero på</text>
-      <text x="212" y="180" font-size="11" fill="var(--gap)" font-family="var(--mono)" font-weight="700">måste bero på</text>
-      <text x="212" y="268" font-size="11" fill="var(--muted)" font-family="var(--mono)">får bero på</text>
-      <text x="212" y="356" font-size="11" fill="var(--muted)" font-family="var(--mono)">får bero på</text>
+      <text x="212" y="92" font-size="11" fill="var(--muted)" font-family="var(--mono)">may depend on</text>
+      <text x="212" y="180" font-size="11" fill="var(--gap)" font-family="var(--mono)" font-weight="700">must depend on</text>
+      <text x="212" y="268" font-size="11" fill="var(--muted)" font-family="var(--mono)">may depend on</text>
+      <text x="212" y="356" font-size="11" fill="var(--muted)" font-family="var(--mono)">may depend on</text>
 
-      <!-- förbjuden riktning -->
+      <!-- forbidden direction -->
       <path d="M470 224 C 530 224, 530 130, 470 130" stroke="var(--gap)" stroke-width="1.5"
             fill="none" stroke-dasharray="5 4"/>
       <line x1="497" y1="163" x2="513" y2="191" stroke="var(--gap)" stroke-width="2.5"/>
       <line x1="513" y1="163" x2="497" y2="191" stroke="var(--gap)" stroke-width="2.5"/>
-      <text x="536" y="172" font-size="11" fill="var(--gap)" font-family="var(--mono)">aldrig</text>
-      <text x="536" y="188" font-size="11" fill="var(--gap)" font-family="var(--mono)">uppåt</text>
+      <text x="536" y="172" font-size="11" fill="var(--gap)" font-family="var(--mono)">never</text>
+      <text x="536" y="188" font-size="11" fill="var(--gap)" font-family="var(--mono)">upwards</text>
 
-      <!-- bench vid sidan -->
+      <!-- bench at the side -->
       <rect x="18" y="194" width="92" height="56" rx="4" fill="var(--surface)" stroke="currentColor"
             stroke-width="1" stroke-dasharray="4 3"/>
       <text x="30" y="216" font-family="var(--mono)" font-size="12" font-weight="700" fill="currentColor">bench/</text>
@@ -152,21 +156,21 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
         <line x1="110" y1="222" x2="126" y2="222"/>
         <line x1="110" y1="232" x2="126" y2="310"/>
       </g>
-      <text x="18" y="270" font-size="10" fill="var(--muted)" font-family="var(--mono)">mäter allt</text>
+      <text x="18" y="270" font-size="10" fill="var(--muted)" font-family="var(--mono)">measures all</text>
     </svg>
-    <figcaption><b>Den röda pilen är den som kostar.</b> Utan <code>mem/</code> är varje lock-free
-      struktur i <code>ds/</code> antingen ett minnesläckage eller en use-after-free — ingen tredje
-      möjlighet. Det är därför modul 9 ligger mitt i period 2 och inte sist.</figcaption>
+    <figcaption><b>The red arrow is the one that costs.</b> Without <code>mem/</code> every lock-free
+      structure in <code>ds/</code> is either a memory leak or a use-after-free — no third
+      option. That is why memory reclamation sits in the middle of period 2 and not last.</figcaption>
   </figure>
 </section>
 
 <section>
-  <div class="shead"><span class="n">02</span><h2>Vilken bok varje modul skickar dig till</h2></div>
-  <p class="prose">Räknat i de 47 förberedelsepassen — alltså i de faktiska läsanvisningarna, inte i
-     planen. Mörkare ruta = fler hänvisningar.</p>
+  <div class="shead"><span class="n">02</span><h2>Which book each module sends you to</h2></div>
+  <p class="prose">Counted in the 47 preparation sessions — i.e. in the actual reading instructions, not in
+     the plan. Darker cell = more references.</p>
 
   <figure>
-    <svg viewBox="0 0 700 330" role="img" aria-label="Matris med tolv moduler i rader och fem böcker i kolumner. AMP och McKenney är citerade i nästan varje modul; Drepper i sex; Boehm bara i modul 2; ThreadSanitizer bara i modul 2.">
+    <svg viewBox="0 0 700 330" role="img" aria-label="Matrix with twelve modules in rows and five books in columns. AMP and McKenney are cited in almost every module; Drepper in six; Boehm only in module 2; ThreadSanitizer only in module 2.">
       <g font-family="var(--mono)" font-size="10" fill="var(--muted)">
         <text x="96" y="26" text-anchor="middle">AMP</text>
         <text x="196" y="26" text-anchor="middle">McKenney</text>
@@ -175,10 +179,10 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
         <text x="496" y="26" text-anchor="middle">TSan</text>
       </g>
       <g font-family="var(--mono)" font-size="10" fill="var(--muted)">
-        <text x="600" y="26">modulens ämne</text>
+        <text x="600" y="26">module topic</text>
       </g>
 
-      <!-- rader -->
+      <!-- rows -->
       <g font-family="var(--mono)" font-size="11">
         <text x="8" y="49" fill="currentColor">M1</text><text x="8" y="72" fill="currentColor">M2</text>
         <text x="8" y="95" fill="currentColor">M3</text><text x="8" y="118" fill="currentColor">M4</text>
@@ -188,7 +192,7 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
         <text x="8" y="279" fill="currentColor">M11</text><text x="8" y="302" fill="currentColor">M12</text>
       </g>
 
-      <!-- celler: x=46+100*kol, y=34+23*rad, 96x19 -->
+      <!-- cells: x=46+100*col, y=34+23*row, 96x19 -->
       <g stroke="var(--line)" stroke-width="1">
         <rect x="46"  y="34" width="96" height="19" fill="var(--s2)"><title>M1 · AMP: 10</title></rect>
         <rect x="146" y="34" width="96" height="19" fill="var(--s2)"><title>M1 · McKenney: 8</title></rect>
@@ -199,7 +203,7 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
         <rect x="46"  y="57" width="96" height="19" fill="var(--s2)"><title>M2 · AMP: 7</title></rect>
         <rect x="146" y="57" width="96" height="19" fill="var(--s4)"><title>M2 · McKenney: 21</title></rect>
         <rect x="246" y="57" width="96" height="19" fill="var(--s1)"><title>M2 · Drepper: 5</title></rect>
-        <rect x="346" y="57" width="96" height="19" fill="var(--s2)"><title>M2 · Boehm: 6 — läs hela, 12 sidor</title></rect>
+        <rect x="346" y="57" width="96" height="19" fill="var(--s2)"><title>M2 · Boehm: 6 — read all of it, 12 pages</title></rect>
         <rect x="446" y="57" width="96" height="19" fill="var(--s1)"><title>M2 · TSan: 2</title></rect>
 
         <rect x="46"  y="80" width="96" height="19" fill="var(--s4)"><title>M3 · AMP: 23</title></rect>
@@ -209,7 +213,7 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
 
         <rect x="46"  y="103" width="96" height="19" fill="var(--s3)"><title>M4 · AMP: 12</title></rect>
         <rect x="146" y="103" width="96" height="19" fill="var(--surface)"><title>M4 · McKenney: 0</title></rect>
-        <rect x="246" y="103" width="96" height="19" fill="var(--s1)"><title>M4 · Drepper: 5 — cachen är hans kapitel</title></rect>
+        <rect x="246" y="103" width="96" height="19" fill="var(--s1)"><title>M4 · Drepper: 5 — the cache is his chapter</title></rect>
         <rect x="346" y="103" width="96" height="19" fill="var(--surface)"/><rect x="446" y="103" width="96" height="19" fill="var(--surface)"/>
 
         <rect x="46"  y="126" width="96" height="19" fill="var(--s1)"><title>M5 · AMP: 1</title></rect>
@@ -230,10 +234,10 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
         <rect x="246" y="195" width="96" height="19" fill="var(--surface)"/><rect x="346" y="195" width="96" height="19" fill="var(--surface)"/><rect x="446" y="195" width="96" height="19" fill="var(--surface)"/>
 
         <rect x="46"  y="218" width="96" height="19" fill="var(--s2)"><title>M9 · AMP: 9</title></rect>
-        <rect x="146" y="218" width="96" height="19" fill="var(--s2)"><title>M9 · McKenney: 6 — RCU och återvinning</title></rect>
+        <rect x="146" y="218" width="96" height="19" fill="var(--s2)"><title>M9 · McKenney: 6 — RCU and reclamation</title></rect>
         <rect x="246" y="218" width="96" height="19" fill="var(--surface)"/><rect x="346" y="218" width="96" height="19" fill="var(--surface)"/><rect x="446" y="218" width="96" height="19" fill="var(--surface)"/>
 
-        <rect x="46"  y="241" width="96" height="19" fill="var(--s5)"><title>M10 · AMP: 28 — flest i hela spåret</title></rect>
+        <rect x="46"  y="241" width="96" height="19" fill="var(--s5)"><title>M10 · AMP: 28 — the most in the whole track</title></rect>
         <rect x="146" y="241" width="96" height="19" fill="var(--s4)"><title>M10 · McKenney: 23</title></rect>
         <rect x="246" y="241" width="96" height="19" fill="var(--s1)"><title>M10 · Drepper: 2</title></rect>
         <rect x="346" y="241" width="96" height="19" fill="var(--surface)"/><rect x="446" y="241" width="96" height="19" fill="var(--surface)"/>
@@ -247,56 +251,56 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
         <rect x="246" y="287" width="96" height="19" fill="var(--surface)"/><rect x="346" y="287" width="96" height="19" fill="var(--surface)"/><rect x="446" y="287" width="96" height="19" fill="var(--surface)"/>
       </g>
 
-      <!-- ämnesetiketter -->
+      <!-- topic labels -->
       <g font-family="var(--mono)" font-size="9.5" fill="var(--muted)">
-        <text x="556" y="48">grinden</text><text x="556" y="71">minnesmodellen</text>
-        <text x="556" y="94">ömsesidig uteslutning</text><text x="556" y="117">lås och cache</text>
-        <text x="556" y="140">monitorer, pool</text><text x="556" y="163">mätriggen</text>
-        <text x="556" y="186">listor</text><text x="556" y="209">köer, stackar</text>
-        <text x="556" y="232">minnesåtervinning</text><text x="556" y="255">hashtabeller</text>
-        <text x="556" y="278">skiplistor</text><text x="556" y="301">slutprovet</text>
+        <text x="556" y="48">the gate</text><text x="556" y="71">memory model</text>
+        <text x="556" y="94">mutual exclusion</text><text x="556" y="117">locks and cache</text>
+        <text x="556" y="140">monitors, pool</text><text x="556" y="163">bench rig</text>
+        <text x="556" y="186">lists</text><text x="556" y="209">queues, stacks</text>
+        <text x="556" y="232">reclamation</text><text x="556" y="255">hash tables</text>
+        <text x="556" y="278">skip lists</text><text x="556" y="301">final exam</text>
       </g>
     </svg>
-    <figcaption><b>Två böcker bär kursen, tre är punktinsatser.</b> AMP och McKenney citeras i
-      tolv respektive elva moduler. Drepper hör till cachen — modul 1, 2, 4, 5, 10. Boehm och
-      ThreadSanitizer förekommer i <em>en</em> modul var, och ska göra det: en artikel på tolv
-      respektive åtta sidor läses en gång, på det ställe där den betyder något.</figcaption>
+    <figcaption><b>Two books carry the course, three are spot uses.</b> AMP and McKenney are cited in
+      twelve and eleven modules respectively. Drepper belongs to the cache — modules 1, 2, 4, 5, 10.
+      Boehm and ThreadSanitizer appear in <em>one</em> module each, and should: a paper of twelve and
+      eight pages respectively is read once, at the place where it matters.</figcaption>
   </figure>
 
   <details>
-    <summary>Samma siffror som tabell</summary>
+    <summary>The same numbers as a table</summary>
     <div class="tw"><table>
-      <thead><tr><th>Modul</th><th>AMP</th><th>McKenney</th><th>Drepper</th><th>Boehm</th><th>TSan</th></tr></thead>
+      <thead><tr><th>Module</th><th>AMP</th><th>McKenney</th><th>Drepper</th><th>Boehm</th><th>TSan</th></tr></thead>
       <tbody>
-        <tr><td>M1 grinden</td><td>10</td><td>8</td><td>6</td><td>0</td><td>0</td></tr>
-        <tr><td>M2 minnesmodellen</td><td>7</td><td>21</td><td>5</td><td>6</td><td>2</td></tr>
-        <tr><td>M3 ömsesidig uteslutning</td><td>23</td><td>3</td><td>2</td><td>0</td><td>0</td></tr>
-        <tr><td>M4 lås och cache</td><td>12</td><td>0</td><td>5</td><td>0</td><td>0</td></tr>
-        <tr><td>M5 monitorer, pool</td><td>1</td><td>10</td><td>1</td><td>0</td><td>0</td></tr>
-        <tr><td>M6 mätriggen</td><td>23</td><td>7</td><td>0</td><td>0</td><td>0</td></tr>
-        <tr><td>M7 listor</td><td>15</td><td>3</td><td>0</td><td>0</td><td>0</td></tr>
-        <tr><td>M8 köer, stackar</td><td>21</td><td>5</td><td>0</td><td>0</td><td>0</td></tr>
-        <tr><td>M9 minnesåtervinning</td><td>9</td><td>6</td><td>0</td><td>0</td><td>0</td></tr>
-        <tr><td>M10 hashtabeller</td><td>28</td><td>23</td><td>2</td><td>0</td><td>0</td></tr>
-        <tr><td>M11 skiplistor</td><td>14</td><td>4</td><td>0</td><td>0</td><td>0</td></tr>
-        <tr><td>M12 slutprovet</td><td>19</td><td>10</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M1 the gate</td><td>10</td><td>8</td><td>6</td><td>0</td><td>0</td></tr>
+        <tr><td>M2 memory model</td><td>7</td><td>21</td><td>5</td><td>6</td><td>2</td></tr>
+        <tr><td>M3 mutual exclusion</td><td>23</td><td>3</td><td>2</td><td>0</td><td>0</td></tr>
+        <tr><td>M4 locks and cache</td><td>12</td><td>0</td><td>5</td><td>0</td><td>0</td></tr>
+        <tr><td>M5 monitors, pool</td><td>1</td><td>10</td><td>1</td><td>0</td><td>0</td></tr>
+        <tr><td>M6 bench rig</td><td>23</td><td>7</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M7 lists</td><td>15</td><td>3</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M8 queues, stacks</td><td>21</td><td>5</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M9 reclamation</td><td>9</td><td>6</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M10 hash tables</td><td>28</td><td>23</td><td>2</td><td>0</td><td>0</td></tr>
+        <tr><td>M11 skip lists</td><td>14</td><td>4</td><td>0</td><td>0</td><td>0</td></tr>
+        <tr><td>M12 final exam</td><td>19</td><td>10</td><td>0</td><td>0</td><td>0</td></tr>
       </tbody>
     </table></div>
   </details>
 </section>
 
 <section>
-  <div class="shead"><span class="n">03</span><h2>De nitton veckorna</h2></div>
-  <p class="prose">Kedjan lagrar inga datum — de räknas ur projektets start plus modulernas längd.
-     Flyttar du en modul skiftar allt efter den, och den här bilden ändrar sig med.</p>
+  <div class="shead"><span class="n">03</span><h2>The nineteen weeks</h2></div>
+  <p class="prose">The chain stores no dates — they are computed from the project's start plus the modules'
+     lengths. Move a module and everything after it shifts, and this picture changes with it.</p>
 
   <figure>
-    <svg viewBox="0 0 700 330" role="img" aria-label="Tidslinje över nitton veckor. Modul 1 till 6 ligger i period 1 fram till 1 november, modul 7 till 12 i period 2 fram till 17 januari. Jul och nyår faller i vecka 16 och 17, som är modul 11.">
-      <!-- julband -->
+    <svg viewBox="0 0 700 330" role="img" aria-label="Timeline over nineteen weeks. Modules 1 to 6 are in period 1 until 1 November, modules 7 to 12 in period 2 until 17 January. Christmas and New Year fall in weeks 16 and 17, which is module 11.">
+      <!-- Christmas band -->
       <rect x="382" y="34" width="66" height="252" fill="var(--sunk)"/>
-      <text x="415" y="26" font-family="var(--mono)" font-size="9.5" fill="var(--muted)" text-anchor="middle">jul / nyår</text>
+      <text x="415" y="26" font-family="var(--mono)" font-size="9.5" fill="var(--muted)" text-anchor="middle">Christmas / New Year</text>
 
-      <!-- veckoskala -->
+      <!-- week scale -->
       <g font-family="var(--mono)" font-size="9" fill="var(--muted)">
         <text x="52" y="302">v1</text><text x="184" y="302">v5</text><text x="316" y="302">v9</text>
         <text x="448" y="302">v13</text><text x="580" y="302">v17</text>
@@ -305,37 +309,37 @@ footer{margin-top:4rem;padding-top:1.2rem;border-top:1px solid var(--line);font-
       </g>
       <line x1="46" y1="290" x2="646" y2="290" stroke="var(--line)" stroke-width="1"/>
 
-      <!-- periodgräns efter v8 -->
+      <!-- period boundary after wk 8 -->
       <line x1="310" y1="20" x2="310" y2="290" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 4"/>
       <text x="316" y="16" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--accent)">period 2 · 1DL590</text>
       <text x="304" y="16" font-family="var(--mono)" font-size="10" font-weight="700" fill="var(--accent)" text-anchor="end">period 1 · 1DL530</text>
 
-      <!-- staplar: x=46+33*(startvecka-1), bredd=33*veckor-3 -->
+      <!-- bars: x=46+33*(start_week-1), width=33*weeks-3 -->
       <g>
-        <rect x="46"  y="34"  width="30"  height="17" rx="2" fill="var(--s3)"/><text x="82"  y="47" font-family="var(--mono)" font-size="10" fill="currentColor">M1 grinden</text>
-        <rect x="79"  y="55"  width="63"  height="17" rx="2" fill="var(--s3)"/><text x="148" y="68" font-family="var(--mono)" font-size="10" fill="currentColor">M2 minnesmodellen</text>
-        <rect x="145" y="76"  width="30"  height="17" rx="2" fill="var(--s3)"/><text x="181" y="89" font-family="var(--mono)" font-size="10" fill="currentColor">M3 ömsesidig uteslutning</text>
-        <rect x="178" y="97"  width="63"  height="17" rx="2" fill="var(--s3)"/><text x="247" y="110" font-family="var(--mono)" font-size="10" fill="currentColor">M4 lås och cache</text>
-        <rect x="244" y="118" width="30"  height="17" rx="2" fill="var(--s3)"/><text x="280" y="131" font-family="var(--mono)" font-size="10" fill="currentColor">M5 monitorer, trådpoolen</text>
-        <rect x="277" y="139" width="30"  height="17" rx="2" fill="var(--s3)"/><text x="313" y="152" font-family="var(--mono)" font-size="10" fill="currentColor">M6 mätriggen · P1-provet</text>
+        <rect x="46"  y="34"  width="30"  height="17" rx="2" fill="var(--s3)"/><text x="82"  y="47" font-family="var(--mono)" font-size="10" fill="currentColor">M1 the gate</text>
+        <rect x="79"  y="55"  width="63"  height="17" rx="2" fill="var(--s3)"/><text x="148" y="68" font-family="var(--mono)" font-size="10" fill="currentColor">M2 memory model</text>
+        <rect x="145" y="76"  width="30"  height="17" rx="2" fill="var(--s3)"/><text x="181" y="89" font-family="var(--mono)" font-size="10" fill="currentColor">M3 mutual exclusion</text>
+        <rect x="178" y="97"  width="63"  height="17" rx="2" fill="var(--s3)"/><text x="247" y="110" font-family="var(--mono)" font-size="10" fill="currentColor">M4 locks and cache</text>
+        <rect x="244" y="118" width="30"  height="17" rx="2" fill="var(--s3)"/><text x="280" y="131" font-family="var(--mono)" font-size="10" fill="currentColor">M5 monitors, thread pool</text>
+        <rect x="277" y="139" width="30"  height="17" rx="2" fill="var(--s3)"/><text x="313" y="152" font-family="var(--mono)" font-size="10" fill="currentColor">M6 bench rig · P1 exam</text>
 
-        <rect x="310" y="160" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="379" y="173" font-family="var(--mono)" font-size="10" fill="currentColor">M7 listor</text>
-        <rect x="376" y="181" width="30"  height="17" rx="2" fill="var(--s5)"/><text x="412" y="194" font-family="var(--mono)" font-size="10" fill="currentColor">M8 köer, stackar</text>
-        <rect x="409" y="202" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="478" y="215" font-family="var(--mono)" font-size="10" fill="currentColor">M9 minnesåtervinning</text>
-        <rect x="475" y="223" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="544" y="236" font-family="var(--mono)" font-size="10" fill="currentColor">M10 hashtabeller</text>
-        <rect x="541" y="244" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="610" y="257" font-family="var(--mono)" font-size="10" fill="currentColor">M11 skiplistor</text>
-        <rect x="607" y="265" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="607" y="278" font-family="var(--mono)" font-size="10" fill="currentColor" text-anchor="end">M12 slutprovet  </text>
+        <rect x="310" y="160" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="379" y="173" font-family="var(--mono)" font-size="10" fill="currentColor">M7 lists</text>
+        <rect x="376" y="181" width="30"  height="17" rx="2" fill="var(--s5)"/><text x="412" y="194" font-family="var(--mono)" font-size="10" fill="currentColor">M8 queues, stacks</text>
+        <rect x="409" y="202" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="478" y="215" font-family="var(--mono)" font-size="10" fill="currentColor">M9 reclamation</text>
+        <rect x="475" y="223" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="544" y="236" font-family="var(--mono)" font-size="10" fill="currentColor">M10 hash tables</text>
+        <rect x="541" y="244" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="610" y="257" font-family="var(--mono)" font-size="10" fill="currentColor">M11 skip lists</text>
+        <rect x="607" y="265" width="63"  height="17" rx="2" fill="var(--s5)"/><text x="607" y="278" font-family="var(--mono)" font-size="10" fill="currentColor" text-anchor="end">M12 final exam  </text>
       </g>
     </svg>
-    <figcaption><b>Modul 11 är den som ligger över julen, och det är avsiktligt.</b> Skiplistor,
-      prioritetsköer och barriärer är många små avgränsade implementationer — den enda modulen som
-      tål halv takt. Sista veckan slutar 17 januari, samma dag som period 2.</figcaption>
+    <figcaption><b>Module 11 is the one that sits over Christmas, and that is deliberate.</b> Skip lists,
+      priority queues and barriers are many small bounded implementations — the only module that
+      tolerates half pace. The last week ends on 17 January, the same day as period 2.</figcaption>
   </figure>
 </section>
 
 <footer>
   <span>Paracore · github.com/Vickeviking/Paracore</span>
-  <span>siffrorna räknade ur spårets API 8 sep 2026</span>
-  <span>docs/diagrams/paracore-kartan.html</span>
+  <span>numbers computed from the track's API 8 Sep 2026</span>
+  <span>docs/diagrams/paracore-map.html</span>
 </footer>
 </div>

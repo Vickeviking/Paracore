@@ -1,32 +1,32 @@
-/* sync/lockable.hpp — kontraktet varje lås i Paracore uppfyller.
+/* sync/lockable.hpp — the contract every lock in Paracore satisfies.
  *
- * STATUS: implementerad. Den här filen fanns inte i C-versionen och kunde
- * inte finnas där.
+ * STATUS: implemented. This file did not exist in the C version and could
+ * not exist there.
  *
- * C-versionen hade ett vtable: en `para_lock` med en enum och funktionspekare,
- * och alla sex spinlåsen gömde sig bakom den. Det kostade ett indirekt anrop
- * per lås och gav ingen kompilator något att kontrollera.
+ * The C version had a vtable: a `para_lock` with an enum and function
+ * pointers, and all six spinlocks hid behind it. That cost an indirect call
+ * per lock and gave no compiler anything to check.
  *
- * C++ gör kontraktet till ett KONCEPT i stället, och det ger tre saker på en
- * gång:
+ * C++ turns the contract into a CONCEPT instead, and that gives three things
+ * at once:
  *
- *  1. Dina egna lås fungerar med hela <mutex>. En McsLock som uppfyller
- *     Lockable kan låsas av std::unique_lock, std::scoped_lock och
- *     std::lock_guard. Du skriver inga egna RAII-vakter.
+ *  1. Your own locks work with all of <mutex>. An McsLock that satisfies
+ *     Lockable can be locked by std::unique_lock, std::scoped_lock and
+ *     std::lock_guard. You write no RAII guards of your own.
  *
- *  2. std::scoped_lock(a, b) tar TVÅ lås utan ABBA-risk — den använder
- *     std::lock, som provar och backar av i stället för att låsa i en fast
- *     ordning. Läs implementationen. Det är kanariefågel 2:s bugg, löst i
- *     biblioteket, och den lösningen blir tillgänglig för dina egna lås i
- *     samma stund som de uppfyller konceptet.
+ *  2. std::scoped_lock(a, b) takes TWO locks without ABBA risk — it uses
+ *     std::lock, which tries and backs off instead of locking in a fixed
+ *     order. Read the implementation. It is canary 2's bug, solved in the
+ *     library, and that solution becomes available to your own locks the
+ *     moment they satisfy the concept.
  *
- *  3. Felmeddelandet kommer på rätt rad. Ett lås som saknar try_lock fälls
- *     av static_assert:en i klassen, inte av trettio rader mallutskrift
- *     inifrån <mutex>.
+ *  3. The error message lands on the right line. A lock that lacks try_lock
+ *     is caught by the static_assert in the class, not by thirty lines of
+ *     template output from inside <mutex>.
  *
- * Namnen följer standardens: BasicLockable, Lockable, SharedLockable. De är
- * "named requirements" i standarden och har medvetet inga koncept i <mutex>;
- * de här är de koncept de hade haft.
+ * The names follow the standard's: BasicLockable, Lockable, SharedLockable.
+ * They are "named requirements" in the standard and deliberately have no
+ * concepts in <mutex>; these are the concepts they would have had.
  */
 #ifndef PARACORE_SYNC_LOCKABLE_HPP
 #define PARACORE_SYNC_LOCKABLE_HPP
@@ -35,21 +35,21 @@
 
 namespace para {
 
-/* std::lock_guard och std::unique_lock kräver exakt det här. */
+/* std::lock_guard and std::unique_lock require exactly this. */
 template <class L>
 concept BasicLockable = requires(L &l) {
     { l.lock() } -> std::same_as<void>;
     { l.unlock() } -> std::same_as<void>;
 };
 
-/* + try_lock. std::scoped_lock med FLERA lås kräver den, för det är try_lock
- * den backar av med. */
+/* + try_lock. std::scoped_lock over SEVERAL locks requires it, because
+ * try_lock is what it backs off with. */
 template <class L>
 concept Lockable = BasicLockable<L> && requires(L &l) {
     { l.try_lock() } -> std::same_as<bool>;
 };
 
-/* std::shared_lock kräver det här av ett rwlock. */
+/* std::shared_lock requires this of an rwlock. */
 template <class L>
 concept SharedLockable = Lockable<L> && requires(L &l) {
     { l.lock_shared() } -> std::same_as<void>;
@@ -57,8 +57,9 @@ concept SharedLockable = Lockable<L> && requires(L &l) {
     { l.unlock_shared() } -> std::same_as<void>;
 };
 
-/* Ett lås som kan säga vad det heter. Mätriggen vill ha namnet i CSV-huvudet,
- * och en sträng som hämtas ur typen kan inte hamna i otakt med typen. */
+/* A lock that can say what it is called. The bench rig wants the name in the
+ * CSV header, and a string taken from the type cannot drift out of sync with
+ * the type. */
 template <class L>
 concept NamedLock = requires {
     { L::name() } -> std::convertible_to<const char *>;

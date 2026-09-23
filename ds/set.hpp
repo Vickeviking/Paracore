@@ -1,48 +1,50 @@
-/* ds/set.hpp — samma mängd, fem synkroniseringsstrategier.
+/* ds/set.hpp — the same set, five synchronisation strategies.
  *
- * STATUS: STUB — du bygger dem i MODUL 7 (AMP kapitel 9).
+ * STATUS: STUB — you build them in MODULE 6 (AMP chapter 9).
  *
- * Det här är period 2:s viktigaste modul, och kapitlet är genialt för att det
- * håller DATASTRUKTUREN konstant och varierar bara synkroniseringen. Samma
- * kontrakt — add, remove, contains — fem gånger:
+ * This is the course's most important data-structure module, and the chapter
+ * is brilliant because it holds the DATA STRUCTURE constant and varies only
+ * the synchronisation. The same contract — add, remove, contains — five
+ * times:
  *
- *   CoarseSet<T>       ett lås om hela listan.
- *   FineSet<T>         hand-over-hand: lås två noder i taget. Första riktiga
- *                      ordningsdisciplinen, och första chansen till deadlock
- *                      om du släpper i fel ordning.
- *   OptimisticSet<T>   gå utan lås, lås sedan och VALIDERA att du fortfarande
- *                      är där du tror. Validering är det nya begreppet, och
- *                      det bär resten av perioden.
- *   LazySet<T>         logisk borttagning via en marked-bit, så att contains
- *                      blir WAIT-FREE och aldrig tar ett lås alls. Kapitlets
- *                      viktigaste steg.
- *   LockFreeSet<T>     Harris/Michael: lågbiten i pekaren bär borttagnings-
- *                      flaggan, CAS på pekare-med-flagga.
+ *   CoarseSet<T>       one lock around the whole list.
+ *   FineSet<T>         hand-over-hand: lock two nodes at a time. The first
+ *                      real ordering discipline, and the first chance of a
+ *                      deadlock if you release in the wrong order.
+ *   OptimisticSet<T>   traverse without locks, then lock and VALIDATE that you
+ *                      are still where you think you are. Validation is the
+ *                      new concept, and it carries the rest of the course.
+ *   LazySet<T>         logical removal via a marked bit, so that contains
+ *                      becomes WAIT-FREE and never takes a lock at all. The
+ *                      chapter's most important step.
+ *   LockFreeSet<T>     Harris/Michael: the low bit of the pointer carries the
+ *                      removal flag, CAS on pointer-with-flag.
  *
- * FÖR VARJE VERSION ska du skriva ned linjäriseringspunkten — inklusive för
- * en `contains` som returnerar false. För LazySet och LockFreeSet är svaret
- * inte uppenbart, och det är hela poängen. Skriv dem i docs/linearization.md.
+ * FOR EVERY VERSION write down the linearisation point — including for a
+ * `contains` that returns false. For LazySet and LockFreeSet the answer is not
+ * obvious, and that is the whole point. Write them in docs/linearization.md.
  *
- * ── Ordningen kommer från std::less, inte från uint64_t ───────────────────
+ * ── The ordering comes from std::less, not from uint64_t ──────────────────
  *
- * C-versionen tog `uint64_t key` och inget annat, för att en jämförelse i C
- * hade krävt en funktionspekare per anrop. Listorna i AMP är sorterade på
- * hashvärde, så nyckeltypen var aldrig poängen — men begränsningen var ändå
- * verklig: en mängd av strängar gick inte att uttrycka.
+ * The C version took `uint64_t key` and nothing else, because a comparison in
+ * C would have required a function pointer per call. The lists in AMP are
+ * sorted on hash value, so the key type was never the point — but the
+ * limitation was real all the same: a set of strings could not be expressed.
  *
  *     LockFreeSet<std::string> s;
  *
- * Comparator som mallparameter kostar ingenting i körtid (den inlinas) och
- * gör strukturen användbar. Det är templates enda riktiga argument, och det
- * är starkt nog.
+ * A comparator as a template parameter costs nothing at run time (it is
+ * inlined) and makes the structure usable. It is templates' only real
+ * argument, and it is strong enough.
  *
- * ── En varning som gäller alla fem ────────────────────────────────────────
+ * ── A warning that applies to all five ────────────────────────────────────
  *
- * `contains` returnerar bool och inte Result<bool>. Det är avsiktligt: i en
- * samtidig mängd kan operationen inte misslyckas, den kan bara svara. Att
- * svaret redan kan vara inaktuellt när det når anroparen är inte ett fel —
- * det är strukturens semantik, och att låtsas annat med en felkod hade gjort
- * det svårare att se. Skriv ned linjäriseringspunkten i stället.
+ * `contains` returns bool and not Result<bool>. That is deliberate: in a
+ * concurrent set the operation cannot fail, it can only answer. That the
+ * answer may already be stale when it reaches the caller is not an error —
+ * it is the structure's semantics, and pretending otherwise with an error
+ * code would have made it harder to see. Write down the linearisation point
+ * instead.
  */
 #ifndef PARACORE_DS_SET_HPP
 #define PARACORE_DS_SET_HPP
@@ -66,7 +68,7 @@ public:
     CoarseSet(const CoarseSet &) = delete;
     CoarseSet &operator=(const CoarseSet &) = delete;
 
-    /* Status::Busy betyder "fanns redan" — inte ett fel, ett svar. */
+    /* Status::Busy means "was already there" — not an error, an answer. */
     [[nodiscard]] Status add(T key) noexcept;
     [[nodiscard]] Status remove(const T &key) noexcept; /* Status::NotFound */
     [[nodiscard]] bool contains(const T &key) const noexcept;
@@ -132,9 +134,9 @@ public:
     [[nodiscard]] Status add(T key) noexcept;
     [[nodiscard]] Status remove(const T &key) noexcept;
 
-    /* WAIT-FREE. Tar inget lås, väntar på ingen, och är klar efter ett
-     * ändligt antal egna steg oavsett vad andra trådar gör. Kan du bevisa
-     * det? Skriv beviset — det är modulens leverans. */
+    /* WAIT-FREE. Takes no lock, waits for nobody, and is done after a finite
+     * number of its own steps regardless of what other threads do. Can you
+     * prove it? Write the proof — it is the module's deliverable. */
     [[nodiscard]] bool contains(const T &key) const noexcept;
     [[nodiscard]] std::size_t size_approx() const noexcept;
 
@@ -160,11 +162,11 @@ public:
 
 private:
     struct Node;
-    /* Markerade pekare: lågbiten bär borttagningsflaggan. Att den tekniken
-     * fungerar bygger på att noderna är minst 2-byte-alignade, vilket de är —
-     * men skriv en static_assert på det i modul 7 ändå. Den dagen någon gör
-     * Node till en packad struct vill du ha ett kompileringsfel, inte en
-     * pekare som tappar sin lägsta adressbit. */
+    /* Marked pointers: the low bit carries the removal flag. That the
+     * technique works relies on the nodes being at least 2-byte aligned,
+     * which they are — but write a static_assert for it in module 6 anyway.
+     * The day someone makes Node a packed struct you want a compile error,
+     * not a pointer that loses its lowest address bit. */
     std::atomic<Node *> head_{nullptr};
     [[no_unique_address]] Compare cmp_{};
 };

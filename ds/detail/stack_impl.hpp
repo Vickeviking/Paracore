@@ -1,16 +1,21 @@
-/* ds/detail/stack_impl.hpp — MODUL 8 fyller den här filen.
+/* ds/detail/stack_impl.hpp — MODULE 7 fills this file.
  *
- * Varför en egen fil under detail/ och inte src/ds/stack.cpp:
+ * Why a file of its own under detail/ and not src/ds/stack.cpp:
  *
- * En mall kan inte kompileras i förväg utan att veta vilka T den används
- * med, så implementationen MÅSTE nå varje översättningsenhet som använder
- * den — alltså ligga i en header. Det är mallarnas enda verkliga pris, och
- * det priset betalas i byggtid.
+ * A template cannot be compiled ahead of time without knowing which T it is
+ * used with, so the implementation MUST reach every translation unit that
+ * uses it — i.e. live in a header. That is templates' only real price, and it
+ * is paid in build time.
  *
- * C-versionen hade regeln "det som ligger i ds/ är publikt, src/ds/ är det
- * inte, och gränsen ska gå att se i filträdet". Regeln överlevde; gränsen
- * flyttade. `ds/x.hpp` är kontraktet du läser. `ds/detail/x_impl.hpp` är hur
- * det är gjort. Ingen utanför biblioteket inkluderar detail/ direkt.
+ * The C version had the rule "what lives in ds/ is public, src/ds/ is not,
+ * and the boundary should be visible in the file tree". The rule survived;
+ * the boundary moved. `ds/x.hpp` is the contract you read.
+ * `ds/detail/x_impl.hpp` is how it is done. Nobody outside the library
+ * includes detail/ directly.
+ *
+ * (Non-template code — like PetersonLock — is the opposite case: its header
+ * lives in sync/ and its .cpp in src/sync/, because the Makefile only
+ * compiles .cpp files under src/.)
  */
 #ifndef PARACORE_DS_DETAIL_STACK_IMPL_HPP
 #define PARACORE_DS_DETAIL_STACK_IMPL_HPP

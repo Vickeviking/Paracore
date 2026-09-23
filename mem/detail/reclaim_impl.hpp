@@ -1,5 +1,5 @@
-/* mem/detail/reclaim_impl.hpp — MODUL 9 fyller den här filen.
- * Se ds/detail/stack_impl.hpp om varför implementationen ligger i en header. */
+/* mem/detail/reclaim_impl.hpp — MODULE 8 fills this file.
+ * See ds/detail/stack_impl.hpp for why the implementation lives in a header. */
 #ifndef PARACORE_MEM_DETAIL_RECLAIM_IMPL_HPP
 #define PARACORE_MEM_DETAIL_RECLAIM_IMPL_HPP
 

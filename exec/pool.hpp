@@ -1,51 +1,51 @@
-/* exec/pool.hpp — trådpoolen. Period 1:s arbetshäst.
+/* exec/pool.hpp — the thread pool. The library's workhorse.
  *
- * STATUS: STUB — du bygger den i MODUL 5.
+ * STATUS: STUB — you build it in MODULE 4.
  *
- * Fast antal arbetare som drar jobb ur en BEGRÄNSAD kö. Begränsad, inte
- * obegränsad: en kö utan tak är inte en design, det är ett minnesläckage med
- * extra steg. När kön är full måste den som lämnar in vänta — och det är
- * backpressure, systemets enda sätt att säga "jag hinner inte".
+ * A fixed number of workers pulling jobs from a BOUNDED queue. Bounded, not
+ * unbounded: a queue without a ceiling is not a design, it is a memory leak
+ * with extra steps. When the queue is full, whoever submits must wait — and
+ * that is backpressure, the system's only way of saying "I can't keep up".
  *
- * Två avstängningslägen, för att de svarar på olika frågor:
- *   Shutdown::Drain  kör klart allt som redan lämnats in. "Vi stänger."
- *   Shutdown::Now    sluta plocka nya jobb, rapportera hur många som aldrig
- *                    kördes. "Det brinner." Antalet är returvärdet, för en
- *                    avstängning som tyst tappar jobb är en bugg med gott
- *                    uppförande.
+ * Two shutdown modes, because they answer different questions:
+ *   Shutdown::Drain  finish everything already submitted. "We're closing."
+ *   Shutdown::Now    stop picking up new jobs, report how many never ran.
+ *                    "It's on fire." The count is the return value, because a
+ *                    shutdown that silently drops jobs is a well-behaved bug.
  *
- * KLART-KRITERIUM (milstolpe 5): 10^6 jobb genom poolen under `make tsan`
- * utan fynd, ren avstängning i båda lägena, och `make asan` rapporterar noll
- * läckta jobb.
+ * DONE CRITERION (module 4): 10^6 jobs through the pool under `make tsan`
+ * without findings, a clean shutdown in both modes, and `make asan` reports
+ * zero leaked jobs.
  *
- * FÄLLAN du ska framkalla med flit en gång: låt ett jobb i poolen vänta på ett
- * Future från ett annat jobb i SAMMA pool, med bara en arbetare. Det är en
- * deadlock, testriggens watchdog fångar den, och den har ett namn (thread pool
- * starvation). Modul 12:s work-stealing-schemaläggare är svaret.
+ * THE TRAP you should provoke on purpose once: let a job in the pool wait for
+ * a Future from another job in the SAME pool, with only one worker. It is a
+ * deadlock, the test rig's watchdog catches it, and it has a name (thread
+ * pool starvation). Module 11's work-stealing scheduler is the answer.
  *
- * ── Det som blev annorlunda i C++, och varför det är mer än bekvämlighet ──
+ * ── What became different in C++, and why it is more than convenience ─────
  *
- * C-versionen:
+ * The C version:
  *
  *     para_pool_submit(p, fn, arg);          // void(*)(void*) + void*
  *
- * För att skicka med två värden fick du allokera en struct, kasta till void*,
- * och frigöra den inne i jobbet. Tre ställen att göra fel på, och det mellersta
- * är osynligt för typsystemet. Resultatet fick du hämta via ett `para_future`
- * som lämnade tillbaka `void **` — alltså en kast till på vägen ut.
+ * To pass two values you had to allocate a struct, cast it to void*, and free
+ * it inside the job. Three places to get it wrong, and the middle one is
+ * invisible to the type system. You fetched the result through a
+ * `para_future` that handed back a `void **` — i.e. one more cast on the way
+ * out.
  *
- * Här:
+ * Here:
  *
- *     auto fut = pool.submit([n] { return dyrt(n); });     // Result<Future<T>>
- *     auto val = fut->get();                               // Result<T>
+ *     auto fut = pool.submit([n] { return expensive(n); });  // Result<Future<T>>
+ *     auto val = fut->get();                                 // Result<T>
  *
- * T härleds ur lambdan. Ingen allokering du äger, ingen kast, och ett jobb som
- * fångar ett unique_ptr fungerar — Task är move_only_function, inte
- * std::function (se core/task.hpp om varför den skillnaden avgör saken).
+ * T is deduced from the lambda. No allocation you own, no cast, and a job that
+ * captures a unique_ptr works — Task is move_only_function, not std::function
+ * (see core/task.hpp for why that difference settles it).
  *
- * Det som INTE ändrades: poolen returnerar Status, den kastar inte. Ett
- * undantag som lämnar ett jobb har ingen att landa hos — arbetartråden är inte
- * den som lämnade in det. Se noexcept i Task.
+ * What did NOT change: the pool returns Status, it does not throw. An
+ * exception leaving a job has nobody to land with — the worker thread is not
+ * the one that submitted it. See noexcept in Task.
  */
 #ifndef PARACORE_EXEC_POOL_HPP
 #define PARACORE_EXEC_POOL_HPP
@@ -66,12 +66,12 @@ class ThreadPool {
 public:
     static constexpr Module kModule = Module::Monitors;
 
-    /* `workers` = 0 betyder hardware_concurrency().
-     * `queue_capacity` = 0 är ett fel (Status::Invalid), inte "obegränsad".
+    /* `workers` = 0 means hardware_concurrency().
+     * `queue_capacity` = 0 is an error (Status::Invalid), not "unbounded".
      *
-     * Fabrik och inte konstruktor, för att uppstarten kan misslyckas och en
-     * konstruktor bara har undantag att misslyckas med. Result<T> i stället —
-     * samma skäl som core/status.hpp beskriver. */
+     * A factory and not a constructor, because start-up can fail and a
+     * constructor only has exceptions to fail with. Result<T> instead — the
+     * same reason core/status.hpp describes. */
     [[nodiscard]] static Result<std::unique_ptr<ThreadPool>>
     create(unsigned workers, std::size_t queue_capacity) noexcept;
 
@@ -79,27 +79,27 @@ public:
     ThreadPool(const ThreadPool &) = delete;
     ThreadPool &operator=(const ThreadPool &) = delete;
 
-    /* Blockerar när kön är full. Det är backpressure, inte en bugg. */
+    /* Blocks when the queue is full. That is backpressure, not a bug. */
     template <class F> [[nodiscard]] Result<Future<std::invoke_result_t<F &>>> submit(F &&f) {
         (void)f;
         return fail(Status::NotBuilt);
     }
 
-    /* Status::Full i stället för att vänta. Det anropet mäter din backpressure. */
+    /* Status::Full instead of waiting. That call measures your backpressure. */
     template <class F> [[nodiscard]] Result<Future<std::invoke_result_t<F &>>> try_submit(F &&f) {
         (void)f;
         return fail(Status::NotBuilt);
     }
 
-    /* När ingen bryr sig om resultatet. Sparar det delade tillståndet ett
-     * Future kostar — mät hur mycket i modul 6. */
+    /* When nobody cares about the result. Saves the shared state a Future
+     * costs — measure how much in module 5. */
     [[nodiscard]] Status submit_detached(Task t) noexcept;
 
-    /* Vänta tills kön är tom OCH ingen arbetare kör. Inte samma sak som
-     * avstängning — poolen tar emot jobb igen efteråt. */
+    /* Wait until the queue is empty AND no worker is running. Not the same as
+     * shutdown — the pool accepts jobs again afterwards. */
     [[nodiscard]] Status wait_idle() noexcept;
 
-    /* Antalet jobb som aldrig kördes. Efter detta tar poolen inte emot mer. */
+    /* The number of jobs that never ran. After this the pool accepts no more. */
     [[nodiscard]] Result<std::size_t> shutdown(Shutdown mode) noexcept;
 
     [[nodiscard]] unsigned worker_count() const noexcept;

@@ -1,4 +1,4 @@
-<title>Paracore Byggstatus</title>
+<title>Paracore Build Status</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
@@ -126,13 +126,18 @@ footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);font-
 
 <header class="top">
   <div class="wrap">
-    <span class="eyebrow">Paracore · byggstatus 8 september 2026</span>
-    <h1>Vad som finns, vad du bygger, och var lektionerna inte räcker</h1>
-    <p class="sub">Ett svar på sex frågor, mätt ur repot och ur spåret i Arcturon — inte uppskattat.
-       Två av dem har obehagliga svar, och de står först.</p>
+    <span class="eyebrow">Paracore · build status 8 September 2026 · historical snapshot</span>
+    <h1>What exists, what you build, and where the lessons fall short</h1>
+    <p class="sub">An answer to six questions, measured from the repo and from the track in Arcturon — not estimated.
+       Two of them have unpleasant answers, and they come first.</p>
+    <p class="sub"><strong>Historical snapshot of the C version.</strong> Everything below describes the repo as
+       it was on 8 Sep 2026, before the rewrite in C++23 (see <code>docs/decisions/0001-cpp-instead-of-c.md</code>)
+       and before the track dropped its old module 1. File names (<code>.c</code>/<code>.h</code>), APIs
+       (<code>para_mutex</code>, <code>PARA_ERR_NOTIMPL</code>) and module numbers (M1–M12) are the old ones.
+       For the current state run <code>make progress</code> and read the README.</p>
     <div class="meta">
-      <span>commit 10eb1fe</span><span>21 headers · 106 publika deklarationer</span>
-      <span>94 lektioner · 19 veckor · 7 sep → 17 jan</span><span>gcc 16.2 · clang 22.1</span>
+      <span>commit 10eb1fe</span><span>21 headers · 106 public declarations</span>
+      <span>94 lessons · 19 weeks · 7 Sep → 17 Jan</span><span>gcc 16.2 · clang 22.1</span>
     </div>
   </div>
 </header>
@@ -140,212 +145,212 @@ footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);font-
 <div class="wrap">
 
   <div class="verdict">
-    <div class="v is-ok"><b>3</b><span>filer klara</span></div>
-    <div class="v is-wait"><b>14</b><span>filer du bygger</span></div>
-    <div class="v is-wait"><b>58</b><span>stubbar kvar</span></div>
-    <div class="v is-ok"><b>94</b><span>lektioner skrivna</span></div>
-    <div class="v is-ok"><b>12 / 12</b><span>moduler klara</span></div>
-    <div class="v is-ok"><b>47</b><span>förberedelsepass</span></div>
-    <div class="v is-ok"><b>21</b><span>headers på plats</span></div>
+    <div class="v is-ok"><b>3</b><span>files done</span></div>
+    <div class="v is-wait"><b>14</b><span>files you build</span></div>
+    <div class="v is-wait"><b>58</b><span>stubs left</span></div>
+    <div class="v is-ok"><b>94</b><span>lessons written</span></div>
+    <div class="v is-ok"><b>12 / 12</b><span>modules generated</span></div>
+    <div class="v is-ok"><b>47</b><span>preparation sessions</span></div>
+    <div class="v is-ok"><b>21</b><span>headers in place</span></div>
   </div>
 
   <section>
-    <div class="shead"><span class="n">01</span><h2>Är alla lektioner genererade?</h2></div>
+    <div class="shead"><span class="n">01</span><h2>Are all lessons generated?</h2></div>
     <div class="answer is-ok prose">
-      <p class="lead">Ja. 94 lektioner över alla tolv moduler, noll misslyckade.</p>
-      <p>28 teorilektioner, 19 labbar och <strong>47 förberedelsepass</strong> — ett före varje
-         innehållslektion, varvat prep → lektion → prep → lektion, i alla tolv modulerna.
-         654 000 tecken. Varje enskilt förberedelsepass har alla fyra delarna: primning, läs,
-         review och frågor med facit, och alla 47 märker sin läsning obligatorisk eller
-         valfri med sidantal.</p>
-      <p>Regeln som stoppade det hette <em>en modul före</em>: innehållet följer takten så att ett
-         spår man överger efter modul två aldrig betalar för modul nio. Den finns kvar som förval.
-         Det som tillkom är en uttrycklig opt-in per spår — när ägaren redan bestämt sig ska ett
-         kostnadsskydd inte bestämma över den som betalar kostnaden.</p>
+      <p class="lead">Yes. 94 lessons across all twelve modules, zero failed.</p>
+      <p>28 theory lessons, 19 labs and <strong>47 preparation sessions</strong> — one before every
+         content lesson, alternating prep → lesson → prep → lesson, in all twelve modules.
+         654,000 characters. Every single preparation session has all four parts: priming, reading,
+         review and questions with answers, and all 47 mark their reading as required or
+         optional with a page count.</p>
+      <p>The rule that stopped it was called <em>one module ahead</em>: content follows the pace so that a
+         track abandoned after module two never pays for module nine. It remains the default.
+         What was added is an explicit per-track opt-in — when the owner has already decided, a
+         cost guard should not overrule the one paying the cost.</p>
     </div>
   </section>
 
   <section>
-    <div class="shead"><span class="n">02</span><h2>Ger lektionerna full täckning på böckerna?</h2></div>
+    <div class="shead"><span class="n">02</span><h2>Do the lessons give full coverage of the books?</h2></div>
     <div class="answer is-gap prose">
-      <p class="lead">Nästan. Fyra av fem böcker får riktiga läsanvisningar — och en får
-         inga alls.</p>
-      <p>Siffrorna nedan är <strong>mätta i de 48 förberedelsepassen</strong>, inte uppskattade:
-         omnämnanden och distinkta kapitel de faktiskt skickar dig till.</p>
+      <p class="lead">Almost. Four of five books get real reading instructions — and one gets
+         none at all.</p>
+      <p>The numbers below are <strong>measured in the 48 preparation sessions</strong>, not estimated:
+         mentions and distinct chapters they actually send you to.</p>
     </div>
 
     <div class="cov">
       <div class="covrow">
-        <div class="t">Herlihy &amp; Shavit<small>AMP · 182 omnämnanden, i alla 12 moduler</small></div>
+        <div class="t">Herlihy &amp; Shavit<small>AMP · 182 mentions, in all 12 modules</small></div>
         <div class="bar"><i style="width:94%;background:var(--ok)"></i></div>
-        <div class="pct" style="color:var(--ok)">kap 2–16</div>
+        <div class="pct" style="color:var(--ok)">ch 2–16</div>
       </div>
       <div class="covrow">
-        <div class="t">McKenney<small>100 omnämnanden i 11 moduler — kap 15, Appendix C, figurer</small></div>
+        <div class="t">McKenney<small>100 mentions in 11 modules — ch 15, Appendix C, figures</small></div>
         <div class="bar"><i style="width:72%;background:var(--ok)"></i></div>
         <div class="pct" style="color:var(--ok)">100</div>
       </div>
       <div class="covrow">
-        <div class="t">ThreadSanitizer<small>2 i förberedelserna, i modul 1 · artikeln är 8 sidor</small></div>
+        <div class="t">ThreadSanitizer<small>2 in the preparations, in module 1 · the paper is 8 pages</small></div>
         <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
-        <div class="pct" style="color:var(--ok)">hel</div>
+        <div class="pct" style="color:var(--ok)">whole</div>
       </div>
       <div class="covrow">
-        <div class="t">Drepper<small>21 omnämnanden i 6 moduler — nu med författarnamn</small></div>
+        <div class="t">Drepper<small>21 mentions in 6 modules — now with the author's name</small></div>
         <div class="bar"><i style="width:55%;background:var(--ok)"></i></div>
         <div class="pct" style="color:var(--ok)">21</div>
       </div>
       <div class="covrow">
-        <div class="t">Boehm<small>läs hela, 12 sidor, OBLIGATORISK — i modul 2, en gång</small></div>
+        <div class="t">Boehm<small>read all of it, 12 pages, REQUIRED — in module 2, once</small></div>
         <div class="bar"><i style="width:100%;background:var(--ok)"></i></div>
-        <div class="pct" style="color:var(--ok)">hel</div>
+        <div class="pct" style="color:var(--ok)">whole</div>
       </div>
     </div>
 
     <div class="prose" style="margin-top:1.4rem">
-      <p><strong>Boehm-hålet är lagat.</strong> Mätningen visade noll läshänvisningar till hans
-         artikel i alla tolv moduler — trots att modul 2:s hela tes <em>är</em> den. Orsaken var
-         konkret: instruktionen bad om <em>kapitel</em>, och en artikel på tolv sidor har inga, så
-         den föll bort. Regeln lyder nu att en källa utan kapitelindelning anvisas i sin helhet.
-         Modul 2:s andra förberedelsepass säger numera <em>"Boehm, Threads Cannot Be Implemented
-         as a Library (PLDI 2005) — läs hela, ca 12 sidor. OBLIGATORISK."</em></p>
-      <p>Och bara där. En artikel hör hemma på ett ställe; att strö in den i modul 4, 7 och 9
-         hade varit utfyllnad, inte täckning.</p>
-      <p>Drepper såg först ut att saknas på samma sätt men gjorde det inte — han citerades under
-         bokens titel och aldrig under sitt efternamn, så den första mätningen rapporterade noll
-         för honom också. Att de två fallen såg identiska ut och var helt olika saker är hela
-         skälet att mäta i stället för att gissa.</p>
+      <p><strong>The Boehm gap is fixed.</strong> The measurement showed zero reading references to his
+         paper in all twelve modules — even though module 2's whole thesis <em>is</em> that paper. The cause
+         was concrete: the instruction asked for <em>chapters</em>, and a twelve-page paper has none, so
+         it fell out. The rule now says that a source without chapters is assigned in full.
+         Module 2's second preparation session now says <em>"Boehm, Threads Cannot Be Implemented
+         as a Library (PLDI 2005) — read all of it, about 12 pages. REQUIRED."</em></p>
+      <p>And only there. A paper belongs in one place; sprinkling it into modules 4, 7 and 9
+         would have been padding, not coverage.</p>
+      <p>Drepper first looked missing in the same way but was not — he was cited under the
+         book's title and never under his surname, so the first measurement reported zero
+         for him too. That the two cases looked identical and were completely different things is the
+         whole reason to measure instead of guess.</p>
     </div>
   </section>
 
   <section>
-    <div class="shead"><span class="n">03</span><h2>Vad är implementerat?</h2></div>
-    <p class="prose">Tre filer, plus riggen runt omkring. De är byggställning, inte kursinnehåll —
-       bygg aldrig om dem. <code>make progress</code> skriver ut samma lista ur källan.</p>
+    <div class="shead"><span class="n">03</span><h2>What is implemented?</h2></div>
+    <p class="prose">Three files, plus the rig around them. They are scaffolding, not course content —
+       never rebuild them. <code>make progress</code> prints the same list from the source.</p>
     <div class="tw"><table>
-      <thead><tr><th>Fil</th><th>Status</th><th>Vad den ger dig</th><th>Rader</th></tr></thead>
+      <thead><tr><th>File</th><th>Status</th><th>What it gives you</th><th>Lines</th></tr></thead>
       <tbody>
-        <tr><td class="f">src/core/status.c</td><td><span class="badge b-ok">klar</span></td>
-            <td class="d"><code>para_status</code>, <code>para_strerror</code>, <code>para_last_os_error</code>. En enum genom hela biblioteket, inget errno-läckage ut.</td><td class="num">36</td></tr>
-        <tr><td class="f">src/core/thread.c</td><td><span class="badge b-ok">klar</span></td>
-            <td class="d">create / join / detach, kooperativ stopp-flagga, <code>para_hardware_concurrency</code>, <code>para_thread_pin</code>, <code>yield</code>.</td><td class="num">125</td></tr>
-        <tr><td class="f">src/core/mutex.c</td><td><span class="badge b-ok">klar</span></td>
-            <td class="d"><code>para_mutex</code> och <code>para_cond</code>. Debugbygget sätter <code>PTHREAD_MUTEX_ERRORCHECK</code>.</td><td class="num">148</td></tr>
-        <tr><td class="f">sync/atomic.h</td><td><span class="badge b-ok">klar</span></td>
+        <tr><td class="f">src/core/status.c</td><td><span class="badge b-ok">done</span></td>
+            <td class="d"><code>para_status</code>, <code>para_strerror</code>, <code>para_last_os_error</code>. One enum through the whole library, no errno leaking out.</td><td class="num">36</td></tr>
+        <tr><td class="f">src/core/thread.c</td><td><span class="badge b-ok">done</span></td>
+            <td class="d">create / join / detach, cooperative stop flag, <code>para_hardware_concurrency</code>, <code>para_thread_pin</code>, <code>yield</code>.</td><td class="num">125</td></tr>
+        <tr><td class="f">src/core/mutex.c</td><td><span class="badge b-ok">done</span></td>
+            <td class="d"><code>para_mutex</code> and <code>para_cond</code>. The debug build sets <code>PTHREAD_MUTEX_ERRORCHECK</code>.</td><td class="num">148</td></tr>
+        <tr><td class="f">sync/atomic.h</td><td><span class="badge b-ok">done</span></td>
             <td class="d">Header-only: <code>PARA_CACHELINE</code>, <code>PARA_ALIGNED</code>, <code>para_cpu_relax</code>, fences, <code>para_backoff</code>.</td><td class="num">—</td></tr>
-        <tr><td class="f">tests/para_test.[ch]</td><td><span class="badge b-ok">klar</span></td>
-            <td class="d">Testriggen: en process per test, watchdog, race-märkning.</td><td class="num">232</td></tr>
-        <tr><td class="f">Makefile + canary_*.c</td><td><span class="badge b-ok">klar</span></td>
-            <td class="d">Fyra byggkonfigurationer, sju verktygsmål, fyra kanariefåglar.</td><td class="num">352</td></tr>
-        <tr><td class="f">src/bench/bench.c</td><td><span class="badge b-wait">delvis</span></td>
-            <td class="d"><strong>Endast</strong> <code>para_now_ns()</code> är klar. Resten är stubb — modul 6.</td><td class="num">28</td></tr>
+        <tr><td class="f">tests/para_test.[ch]</td><td><span class="badge b-ok">done</span></td>
+            <td class="d">The test rig: one process per test, watchdog, race tagging.</td><td class="num">232</td></tr>
+        <tr><td class="f">Makefile + canary_*.c</td><td><span class="badge b-ok">done</span></td>
+            <td class="d">Four build configurations, seven tool targets, four canaries.</td><td class="num">352</td></tr>
+        <tr><td class="f">src/bench/bench.c</td><td><span class="badge b-wait">partial</span></td>
+            <td class="d"><strong>Only</strong> <code>para_now_ns()</code> is done. The rest is a stub — module 6.</td><td class="num">28</td></tr>
       </tbody>
     </table></div>
   </section>
 
   <section>
-    <div class="shead"><span class="n">04</span><h2>Finns alla header-filer? Vad kommer du bygga?</h2></div>
+    <div class="shead"><span class="n">04</span><h2>Do all header files exist? What will you build?</h2></div>
     <div class="answer is-ok prose">
-      <p class="lead">Ja. Alla 21 headers finns, med 106 publika deklarationer. Inget API är ospecificerat.</p>
-      <p>Du fyller implementationer, aldrig gränssnitt. Varje header säger själv vilken modul som äger den.</p>
+      <p class="lead">Yes. All 21 headers exist, with 106 public declarations. No API is unspecified.</p>
+      <p>You fill implementations, never interfaces. Every header says itself which module owns it.</p>
     </div>
     <div class="tw"><table>
-      <thead><tr><th>Header</th><th>Modul</th><th>Vad du bygger</th><th>Dekl.</th></tr></thead>
+      <thead><tr><th>Header</th><th>Module</th><th>What you build</th><th>Decl.</th></tr></thead>
       <tbody>
-        <tr><td class="f">sync/spinlock.h</td><td><span class="badge b-mod">M4</span></td><td class="d">TAS → TTAS → backoff → ALock → CLH → MCS bakom ett vtable</td><td class="num">5</td></tr>
-        <tr><td class="f">exec/pool.h</td><td><span class="badge b-mod">M5</span></td><td class="d">Trådpool, begränsad kö, backpressure, två avstängningslägen</td><td class="num">7</td></tr>
-        <tr><td class="f">sync/rwlock.h</td><td><span class="badge b-mod">M5</span></td><td class="d">Läsarpreferens (mät svälten) och en rättvis kövariant</td><td class="num">8</td></tr>
-        <tr><td class="f">sync/semaphore.h</td><td><span class="badge b-mod">M5</span></td><td class="d">På mutex + cond, inte på <code>sem_t</code> — predikatet är poängen</td><td class="num">6</td></tr>
-        <tr><td class="f">core/task.h</td><td><span class="badge b-mod">M5</span></td><td class="d"><code>para_future</code> med acquire/release-paret som bär resultatet</td><td class="num">4</td></tr>
-        <tr><td class="f">bench/bench.h</td><td><span class="badge b-mod">M6</span></td><td class="d">Median, p99, variationskoefficient som stoppvillkor, CSV</td><td class="num">3</td></tr>
-        <tr><td class="f">ds/set.h</td><td><span class="badge b-mod">M7</span></td><td class="d">Fem strategier: coarse, fine, optimistic, lazy, Harris/Michael</td><td class="num">6</td></tr>
-        <tr><td class="f">ds/queue.h</td><td><span class="badge b-mod">M8</span></td><td class="d">Tvålåskö, Michael–Scott med hjälpsteget, SPSC, blocking</td><td class="num">8</td></tr>
-        <tr><td class="f">ds/stack.h</td><td><span class="badge b-mod">M8</span></td><td class="d">Treiber och eliminationsstacken</td><td class="num">5</td></tr>
-        <tr><td class="f">mem/reclaim.h</td><td><span class="badge b-mod">M9</span></td><td class="d">Taggade pekare, hazard pointers, epoker. Utan den läcker allt ovan.</td><td class="num">9</td></tr>
-        <tr><td class="f">ds/hashmap.h</td><td><span class="badge b-mod">M10</span></td><td class="d">Globalt lås → striped → refinable → split-ordering</td><td class="num">6</td></tr>
-        <tr><td class="f">core/barrier.h</td><td><span class="badge b-mod">M11</span></td><td class="d">Sense-reversing, tournament, statiskt träd</td><td class="num">3</td></tr>
-        <tr><td class="f">ds/skiplist.h</td><td><span class="badge b-mod">M11</span></td><td class="d">Lock-free skiplista och prioritetskö</td><td class="num">9</td></tr>
-        <tr><td class="f">exec/scheduler.h</td><td><span class="badge b-mod">M12</span></td><td class="d">Chase–Lev work-stealing. Slutprovet.</td><td class="num">6</td></tr>
+        <tr><td class="f">sync/spinlock.h</td><td><span class="badge b-mod">M4</span></td><td class="d">TAS → TTAS → backoff → ALock → CLH → MCS behind a vtable</td><td class="num">5</td></tr>
+        <tr><td class="f">exec/pool.h</td><td><span class="badge b-mod">M5</span></td><td class="d">Thread pool, bounded queue, backpressure, two shutdown modes</td><td class="num">7</td></tr>
+        <tr><td class="f">sync/rwlock.h</td><td><span class="badge b-mod">M5</span></td><td class="d">Reader preference (measure the starvation) and a fair queued variant</td><td class="num">8</td></tr>
+        <tr><td class="f">sync/semaphore.h</td><td><span class="badge b-mod">M5</span></td><td class="d">On mutex + cond, not on <code>sem_t</code> — the predicate is the point</td><td class="num">6</td></tr>
+        <tr><td class="f">core/task.h</td><td><span class="badge b-mod">M5</span></td><td class="d"><code>para_future</code> with the acquire/release pair that carries the result</td><td class="num">4</td></tr>
+        <tr><td class="f">bench/bench.h</td><td><span class="badge b-mod">M6</span></td><td class="d">Median, p99, coefficient of variation as the stop condition, CSV</td><td class="num">3</td></tr>
+        <tr><td class="f">ds/set.h</td><td><span class="badge b-mod">M7</span></td><td class="d">Five strategies: coarse, fine, optimistic, lazy, Harris/Michael</td><td class="num">6</td></tr>
+        <tr><td class="f">ds/queue.h</td><td><span class="badge b-mod">M8</span></td><td class="d">Two-lock queue, Michael–Scott with the helping step, SPSC, blocking</td><td class="num">8</td></tr>
+        <tr><td class="f">ds/stack.h</td><td><span class="badge b-mod">M8</span></td><td class="d">Treiber and the elimination stack</td><td class="num">5</td></tr>
+        <tr><td class="f">mem/reclaim.h</td><td><span class="badge b-mod">M9</span></td><td class="d">Tagged pointers, hazard pointers, epochs. Without it everything above leaks.</td><td class="num">9</td></tr>
+        <tr><td class="f">ds/hashmap.h</td><td><span class="badge b-mod">M10</span></td><td class="d">Global lock → striped → refinable → split-ordering</td><td class="num">6</td></tr>
+        <tr><td class="f">core/barrier.h</td><td><span class="badge b-mod">M11</span></td><td class="d">Sense-reversing, tournament, static tree</td><td class="num">3</td></tr>
+        <tr><td class="f">ds/skiplist.h</td><td><span class="badge b-mod">M11</span></td><td class="d">Lock-free skip list and priority queue</td><td class="num">9</td></tr>
+        <tr><td class="f">exec/scheduler.h</td><td><span class="badge b-mod">M12</span></td><td class="d">Chase–Lev work-stealing. The final exam.</td><td class="num">6</td></tr>
       </tbody>
     </table></div>
-    <p class="prose" style="margin-top:1.1rem"><strong>Tre moduler äger ingen befintlig fil.</strong>
-      M1 läser grinden. M2 skapar <code>bench/litmus.h</code> + <code>src/bench/litmus.c</code>.
-      M3 skapar egna filer i <code>src/sync/</code> för Peterson, filterlåset och bageriet —
-      studieobjekt, inte produktionslås, och därför inte i <code>spinlock.c</code>.</p>
+    <p class="prose" style="margin-top:1.1rem"><strong>Three modules own no existing file.</strong>
+      M1 reads the gate. M2 creates <code>bench/litmus.h</code> + <code>src/bench/litmus.c</code>.
+      M3 creates files of its own in <code>src/sync/</code> for Peterson, the filter lock and the bakery —
+      study objects, not production locks, and therefore not in <code>spinlock.c</code>.</p>
   </section>
 
   <section>
-    <div class="shead"><span class="n">05</span><h2>Hur skapar du ett test för en ny grej?</h2></div>
-    <p class="prose">Lägg det i valfri <code>tests/*.c</code>. Registreringen sker via en konstruktor —
-       ingen lista att uppdatera, inget <code>main</code> att röra.</p>
-<pre><span class="c">/* tests/test_spinlock.c — ny fil, upptäcks automatiskt av Makefile */</span>
+    <div class="shead"><span class="n">05</span><h2>How do you create a test for a new thing?</h2></div>
+    <p class="prose">Put it in any <code>tests/*.c</code>. Registration happens through a constructor —
+       no list to update, no <code>main</code> to touch.</p>
+<pre><span class="c">/* tests/test_spinlock.c — new file, picked up automatically by the Makefile */</span>
 <span class="k">#include</span> "para_test.h"
 <span class="k">#include</span> &lt;paracore.h&gt;
 
-<span class="c">/* PARA_TEST_RACE märker testet som kapplöpningskänsligt.
-   `make stress` kör BARA dessa, 200 varv, under TSan. */</span>
-PARA_TEST_RACE(mcs_last_slapper_i_fifo_ordning) {
+<span class="c">/* PARA_TEST_RACE tags the test as race-sensitive.
+   `make stress` runs ONLY these, 200 rounds, under TSan. */</span>
+PARA_TEST_RACE(mcs_lock_releases_in_fifo_order) {
     para_lock *l = NULL;
     PARA_ASSERT_OK(para_lock_init(&amp;l, PARA_LOCK_MCS, 8));
 
-    <span class="c">/* ... starta trådar, mät ordningen ... */</span>
+    <span class="c">/* ... start threads, measure the order ... */</span>
 
-    PARA_ASSERT_EQ(observerad_ordning, forvantad);
+    PARA_ASSERT_EQ(observed_order, expected);
     para_lock_destroy(l);
 }
 </pre>
     <ul class="plain prose">
-      <li><code>PARA_ASSERT_OK(expr)</code> — kräver <code>PARA_OK</code>, skriver ut <code>para_strerror</code> annars.</li>
-      <li><code>PARA_ASSERT_STATUS(expr, PARA_ERR_BUSY)</code> — för de förväntade felen.</li>
-      <li><code>PARA_ASSERT_NOT_BUILT_YET(expr)</code> — den som finns i <code>test_notimpl.c</code> idag.
-          När du bygger modulen <strong>faller</strong> den, och det är signalen att komma tillbaka och skriva det riktiga testet.</li>
-      <li>En deadlock blir <code>TIMEOUT</code> med testets namn efter 10 s, inte en hängd svit.
-          En krasch blir <code>SIGNAL</code> med signalnamnet. Båda tack vare en process per test.</li>
+      <li><code>PARA_ASSERT_OK(expr)</code> — requires <code>PARA_OK</code>, prints <code>para_strerror</code> otherwise.</li>
+      <li><code>PARA_ASSERT_STATUS(expr, PARA_ERR_BUSY)</code> — for the expected errors.</li>
+      <li><code>PARA_ASSERT_NOT_BUILT_YET(expr)</code> — the one in <code>test_notimpl.c</code> today.
+          When you build the module it <strong>fails</strong>, and that is the signal to come back and write the real test.</li>
+      <li>A deadlock becomes <code>TIMEOUT</code> with the test's name after 10 s, not a hung suite.
+          A crash becomes <code>SIGNAL</code> with the signal name. Both thanks to one process per test.</li>
     </ul>
   </section>
 
   <section>
-    <div class="shead"><span class="n">06</span><h2>Hur ser dev-loopen ut?</h2></div>
+    <div class="shead"><span class="n">06</span><h2>What does the dev loop look like?</h2></div>
     <ol class="loop prose" style="max-width:none">
       <li><span class="step">01</span><div><code>make progress</code>
-        <span class="why">Vilken fil äger modulen du är på? Listan räknas fram ur källan, inte ur en README som glidit.</span></div></li>
-      <li><span class="step">02</span><div>Öppna stubben, läs headern ovanför den
-        <span class="why">Kommentaren är specen: vilka varianter, vilken ordning, och varför var och en finns.</span></div></li>
-      <li><span class="step">03</span><div>Ta bort <code>return PARA_ERR_NOTIMPL</code>, skriv den enklaste varianten
-        <span class="why">Coarse före fine. Referensen först — allt annat ska slå den, och utan den finns inget att slå.</span></div></li>
+        <span class="why">Which file owns the module you are on? The list is computed from the source, not from a README that drifted.</span></div></li>
+      <li><span class="step">02</span><div>Open the stub, read the header above it
+        <span class="why">The comment is the spec: which variants, which order, and why each one exists.</span></div></li>
+      <li><span class="step">03</span><div>Remove <code>return PARA_ERR_NOTIMPL</code>, write the simplest variant
+        <span class="why">Coarse before fine. The reference first — everything else should beat it, and without it there is nothing to beat.</span></div></li>
       <li><span class="step">04</span><div><code>make test</code>
-        <span class="why">Sekunder. <code>test_notimpl.c</code> faller nu för din modul — ta bort raden, skriv ett riktigt test.</span></div></li>
-      <li><span class="step">05</span><div><code>make tsan</code> och <code>make stress</code>
-        <span class="why">Ett samtidighetstest som kördes en gång har inte bevisat något. 200 varv under TSan har det.</span></div></li>
-      <li><span class="step">06</span><div><code>make helgrind</code> vid varje nytt lås
-        <span class="why">Hittar låsordningsinversioner som aldrig inträffat under körning. Det TSan inte alltid ser.</span></div></li>
-      <li><span class="step">07</span><div><code>make asan</code> när du börjar frigöra minne
-        <span class="why">Från modul 9 och framåt är det här steget hela poängen, inte en formalitet.</span></div></li>
-      <li><span class="step">08</span><div><code>make bench</code> + mät, sedan nästa variant
-        <span class="why">Varje steg i en modul finns för att det förra mätte dåligt. Utan siffran är ordningen godtycklig.</span></div></li>
-      <li><span class="step">09</span><div><code>make check</code> före commit
-        <span class="why">fmt + test + tsan + asan + canary. Slutrubriken säger <code>ALLT GRÖNT</code> bara om varje lane faktiskt kördes.</span></div></li>
+        <span class="why">Seconds. <code>test_notimpl.c</code> now fails for your module — remove the row, write a real test.</span></div></li>
+      <li><span class="step">05</span><div><code>make tsan</code> and <code>make stress</code>
+        <span class="why">A concurrency test that ran once has not proven anything. 200 rounds under TSan has.</span></div></li>
+      <li><span class="step">06</span><div><code>make helgrind</code> for every new lock
+        <span class="why">Finds lock-order inversions that never happened at run time. What TSan does not always see.</span></div></li>
+      <li><span class="step">07</span><div><code>make asan</code> when you start freeing memory
+        <span class="why">From module 9 onwards this step is the whole point, not a formality.</span></div></li>
+      <li><span class="step">08</span><div><code>make bench</code> + measure, then the next variant
+        <span class="why">Every step in a module exists because the previous one measured badly. Without the number the order is arbitrary.</span></div></li>
+      <li><span class="step">09</span><div><code>make check</code> before committing
+        <span class="why">fmt + test + tsan + asan + canary. The final heading says <code>ALL GREEN</code> only if every lane actually ran.</span></div></li>
     </ol>
   </section>
 
   <section>
-    <div class="shead"><span class="n">07</span><h2>De tre utfallen</h2></div>
-    <p class="prose">Repots enda egentliga regel om verktyg, och den har tjänat in sig fyra gånger den
-       här veckan. Ett verktyg som inte kunde köra har <strong>inte</strong> svarat "nej" — det har inte
-       kontrollerat någonting alls.</p>
-<pre><span class="g">fälld / ok            </span> verktyget kördes och gav ett svar
-<span class="k">HOPPAD / OTILLGÄNGLIG </span> verktyget kunde inte köra — orsaken skrivs ut
-<span class="r">MISSAD / FEL          </span> verktyget kördes och hittade ingenting → grinden faller</pre>
-    <p class="prose">Fyra gånger, allihop hittade genom att köra samma commit på en annan maskin:
-      <code>valgrind</code> saknades och grinden föll som om koden var trasig · helgrind
-      <em>kraschade internt</em> och såg nästan ut som en frikännande · TSan startar inte på Pi:ns
-      47-bitars VMA · <code>clang-format</code> saknades och <code>fmt-check</code> svarade
-      <strong>"FEL — kör make fmt"</strong>, alltså skyllde på koden. Den sista var värst.</p>
+    <div class="shead"><span class="n">07</span><h2>The three outcomes</h2></div>
+    <p class="prose">The repo's only real rule about tools, and it has paid for itself four times this
+       week. A tool that could not run has <strong>not</strong> answered "no" — it has not
+       checked anything at all.</p>
+<pre><span class="g">caught / ok           </span> the tool ran and gave an answer
+<span class="k">SKIPPED / UNAVAILABLE </span> the tool could not run — the reason is printed
+<span class="r">MISSED / FAILED       </span> the tool ran and found nothing → the gate fails</pre>
+    <p class="prose">Four times, all found by running the same commit on another machine:
+      <code>valgrind</code> was missing and the gate failed as if the code were broken · helgrind
+      <em>crashed internally</em> and looked almost like an acquittal · TSan does not start at the Pi's
+      47-bit VMA · <code>clang-format</code> was missing and <code>fmt-check</code> answered
+      <strong>"ERROR — run make fmt"</strong>, i.e. blamed the code. The last one was the worst.</p>
   </section>
 
   <footer>
     <span>Paracore · github.com/Vickeviking/Paracore</span>
-    <span>genererad ur repot 2026-09-07</span>
+    <span>generated from the repo 2026-09-07</span>
     <span>docs/diagrams/paracore-status.html</span>
   </footer>
 </div>

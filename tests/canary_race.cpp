@@ -1,26 +1,26 @@
-/* KANARIEFÅGEL 1 — en avsiktlig datakapplöpning.
+/* CANARY 1 — a deliberate data race.
  *
- * Det här programmet är TRASIGT MED FLIT och ska aldrig fixas.
+ * This program is BROKEN ON PURPOSE and must never be fixed.
  *
- * `make canary` bygger det under ThreadSanitizer och kräver att TSan FÄLLER
- * det. Går det igenom har din sanitizer slutat fungera — fel flaggor, fel
- * länkordning, en -fno-sanitize som smugit in via ett beroende — och då är
- * varje grönt TSan-resultat du fått sedan dess värdelöst.
+ * `make canary` builds it under ThreadSanitizer and requires TSan to CATCH
+ * it. If it passes, your sanitizer has stopped working — wrong flags, wrong
+ * link order, a -fno-sanitize that sneaked in through a dependency — and then
+ * every green TSan result you have had since is worthless.
  *
- * Det är den enda testtyp som skyddar mot att verktygen tyst går sönder, och
- * den kostar tjugo rader. Ta aldrig bort den.
+ * It is the only kind of test that protects against the tools silently
+ * breaking, and it costs twenty lines. Never remove it.
  */
 #include <core/thread.hpp>
 
 #include <cstdio>
 
 namespace {
-/* Medvetet inte std::atomic. Det är hela poängen. */
+/* Deliberately not std::atomic. That is the whole point. */
 long shared_counter = 0;
 
 void bump() {
     for (int i = 0; i < 100000; ++i) {
-        shared_counter++; /* läs-modifiera-skriv utan synkronisering */
+        shared_counter++; /* read-modify-write without synchronisation */
     }
 }
 } // namespace
@@ -29,7 +29,8 @@ int main() {
     {
         para::Thread a{bump};
         para::Thread b{bump};
-    } /* jthread joinar här */
-    std::printf("räknaren blev %ld (väntat 200000 om ingen kapplöpning fanns)\n", shared_counter);
+    } /* jthread joins here */
+    std::printf("the counter ended at %ld (200000 expected if there were no race)\n",
+                shared_counter);
     return 0;
 }

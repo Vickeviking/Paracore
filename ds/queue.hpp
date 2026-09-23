@@ -1,36 +1,37 @@
-/* ds/queue.hpp — FIFO, fyra gånger.
+/* ds/queue.hpp — FIFO, four times.
  *
- * STATUS: STUB — du bygger dem i MODUL 8 (AMP kapitel 10).
+ * STATUS: STUB — you build them in MODULE 7 (AMP chapter 10).
  *
- *   TwoLockQueue<T>        begränsad kö med TVÅ lås: ett för huvudet, ett för
- *                          svansen. Producenter och konsumenter rör olika lås
- *                          OCH olika cachelinjer. Samma insikt som falsk
- *                          delning, nu som design i stället för som bugg.
- *   MichaelScottQueue<T>   icke-blockerande. Den har ett HJÄLPSTEG som folk
- *                          hoppar över: en tråd som ser en halvfärdig enqueue
- *                          (svansen pekar inte på sista noden) måste slutföra
- *                          den ÅT den andra tråden innan den fortsätter. Utan
- *                          hjälpsteget är kön inte lock-free — den är bara
- *                          ofta snabb, vilket är något helt annat.
- *   SpscRing<T>            en producent, en konsument, noll lås, noll CAS.
- *                          head och tail i skilda cachelinjer, acquire/release.
- *                          Den snabbaste kön som finns, och basen för modul
- *                          12:s arbetarköer.
- *   BlockingQueue<T>       tvålåskön plus villkorsvariabler: blockera i
- *                          stället för att returnera Empty/Full. Det är den
- *                          poolen (exec/pool.hpp) faktiskt vill ha.
+ *   TwoLockQueue<T>        bounded queue with TWO locks: one for the head, one
+ *                          for the tail. Producers and consumers touch
+ *                          different locks AND different cache lines. The same
+ *                          insight as false sharing, now as design instead of
+ *                          as a bug.
+ *   MichaelScottQueue<T>   non-blocking. It has a HELPING STEP people skip: a
+ *                          thread that sees a half-finished enqueue (the tail
+ *                          does not point at the last node) must complete it
+ *                          FOR the other thread before it carries on. Without
+ *                          the helping step the queue is not lock-free — it is
+ *                          just often fast, which is something else entirely.
+ *   SpscRing<T>            one producer, one consumer, zero locks, zero CAS.
+ *                          head and tail in separate cache lines,
+ *                          acquire/release. The fastest queue there is, and
+ *                          the basis for module 11's worker deques.
+ *   BlockingQueue<T>       the two-lock queue plus condition variables: block
+ *                          instead of returning Empty/Full. That is what the
+ *                          pool (exec/pool.hpp) actually wants.
  *
- * ── Kapaciteten är en mallparameter i SpscRing, och bara där ──────────────
+ * ── The capacity is a template parameter in SpscRing, and only there ──────
  *
- * SpscRing<T, N> kräver att N är en tvåpotens. I C var det ett runtime-
- * argument som måste kontrolleras (`Status::Invalid annars, så slipper du en
- * modulo i den heta loopen`). Här är kravet en static_assert: felet blir
- * omöjligt att bygga, och kompilatorn vet att `& (N - 1)` räcker. Titta på
- * assemblern med och utan — det är modul 2:s mätteknik använd på ett annat
- * problem.
+ * SpscRing<T, N> requires N to be a power of two. In C it was a run-time
+ * argument that had to be checked (`Status::Invalid otherwise, so you avoid a
+ * modulo in the hot loop`). Here the requirement is a static_assert: the
+ * error becomes impossible to build, and the compiler knows `& (N - 1)` is
+ * enough. Look at the assembly with and without — it is module 1's
+ * measurement technique applied to a different problem.
  *
- * De tre andra tar kapaciteten i konstruktorn, för att de används med
- * kapaciteter som bestäms av konfiguration.
+ * The other three take the capacity in the constructor, because they are used
+ * with capacities decided by configuration.
  */
 #ifndef PARACORE_DS_QUEUE_HPP
 #define PARACORE_DS_QUEUE_HPP
@@ -77,8 +78,8 @@ public:
     MichaelScottQueue(const MichaelScottQueue &) = delete;
     MichaelScottQueue &operator=(const MichaelScottQueue &) = delete;
 
-    /* Obegränsad — den enda av de fyra som får vara det, och bara för att
-     * hjälpsteget kräver att svansen alltid kan flyttas fram. */
+    /* Unbounded — the only one of the four allowed to be, and only because
+     * the helping step requires that the tail can always be moved forward. */
     [[nodiscard]] Status push(T value) noexcept;
     [[nodiscard]] Result<T> try_pop() noexcept;
     [[nodiscard]] std::size_t size_approx() const noexcept;
@@ -89,12 +90,12 @@ private:
     CacheAligned<std::atomic<Node *>> tail_{};
 };
 
-/* N MÅSTE vara en tvåpotens — och nu är det kompilatorn som säger ifrån. */
+/* N MUST be a power of two — and now it is the compiler that objects. */
 template <LockFreeElement T, std::size_t N> class SpscRing {
-    static_assert(N >= 2, "en ring med plats för mindre än två är inte en ring");
+    static_assert(N >= 2, "a ring with room for fewer than two is not a ring");
     static_assert(std::has_single_bit(N),
-                  "N måste vara en tvåpotens — annars blir index en modulo, "
-                  "och modulon syns i kurvan");
+                  "N must be a power of two — otherwise indexing becomes a modulo, "
+                  "and the modulo shows in the curve");
 
 public:
     static constexpr Module kModule = Module::QueuesStacks;
@@ -105,18 +106,18 @@ public:
     SpscRing(const SpscRing &) = delete;
     SpscRing &operator=(const SpscRing &) = delete;
 
-    /* Anropas av EXAKT en tråd. Att det inte går att kontrollera i typen är
-     * kösortens verkliga pris, och det ska stå i din rapport. (Ett assert i
-     * debug som sparar producentens thread::id är en rimlig kompromiss —
-     * bygg det, mät att det inte kostar i release.) */
+    /* Called by EXACTLY one thread. That this cannot be checked in the type
+     * is this kind of queue's real price, and it should be in your report.
+     * (A debug assert that saves the producer's thread::id is a reasonable
+     * compromise — build it, measure that it costs nothing in release.) */
     [[nodiscard]] Status try_push(T value) noexcept;
     [[nodiscard]] Result<T> try_pop() noexcept;
     [[nodiscard]] std::size_t size_approx() const noexcept;
 
 private:
-    /* De två räknarna i SKILDA cachelinjer. Det är hela skälet till att
-     * CacheAligned finns, och den enda raden i repot där du kan ta bort en
-     * typ och mäta en halvering. Gör det en gång. */
+    /* The two counters in SEPARATE cache lines. That is the whole reason
+     * CacheAligned exists, and the only line in the repo where you can remove
+     * a type and measure a halving. Do it once. */
     CacheAligned<std::atomic<std::size_t>> head_{};
     CacheAligned<std::atomic<std::size_t>> tail_{};
     alignas(kCacheLine) std::optional<T> slots_[N]{};
@@ -131,17 +132,18 @@ public:
     BlockingQueue(const BlockingQueue &) = delete;
     BlockingQueue &operator=(const BlockingQueue &) = delete;
 
-    /* Blockerar när kön är full respektive tom. Status::Closed när någon
-     * stängt kön under väntan — det är den enda vägen ut ur en blockerande
-     * kö som inte är en deadlock, och därför den viktigaste. */
+    /* Blocks when the queue is full or empty respectively. Status::Closed
+     * when someone closed the queue during the wait — that is the only way out
+     * of a blocking queue that is not a deadlock, and therefore the most
+     * important one. */
     [[nodiscard]] Status push(T value) noexcept;
     [[nodiscard]] Result<T> pop() noexcept;
 
     [[nodiscard]] Status try_push(T value) noexcept;
     [[nodiscard]] Result<T> try_pop() noexcept;
 
-    /* Väck alla väntare och vägra nya push. Det som gör en ren avstängning
-     * möjlig. */
+    /* Wake all waiters and refuse new pushes. What makes a clean shutdown
+     * possible. */
     [[nodiscard]] Status close() noexcept;
 
     [[nodiscard]] std::size_t size_approx() const noexcept;

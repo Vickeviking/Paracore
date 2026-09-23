@@ -1,7 +1,8 @@
 /* pool.cpp
  *
- * MODUL 5 fyller den här filen. De mallade submit()/try_submit() ligger i
- * exec/pool.hpp — de måste nå varje anropare — men allt annat hör hit.
+ * MODULE 4 fills this file. The templated submit()/try_submit() live in
+ * exec/pool.hpp — they have to reach every caller — but everything else
+ * belongs here.
  */
 #include <exec/pool.hpp>
 

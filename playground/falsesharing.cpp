@@ -1,29 +1,32 @@
-/* playground/falsesharing.cpp — falsk delning, mätt med std::atomic_ref.
+/* playground/falsesharing.cpp — false sharing, measured with std::atomic_ref.
  *
  *     make run PROG=falsesharing
  *     make run PROG=falsesharing ARGS=8
  *
- * NY I C++-VERSIONEN, och den här mätningen gick inte att skriva i C.
+ * NEW IN THE C++ VERSION, and this measurement could not be written in C.
  *
- * Åtta trådar räknar upp var sitt element i en vanlig array. Ingen delar data
- * med någon. Och ändå kollapsar genomströmningen — för att elementen ligger i
- * SAMMA cachelinje, och hårdvaran delar det programmet inte delar.
+ * Eight threads each count up their own element in an ordinary array. Nobody
+ * shares data with anybody. And still the throughput collapses — because the
+ * elements sit in the SAME cache line, and the hardware shares what the
+ * program does not.
  *
- * Sedan samma sak med para::CacheAligned emellan. Skillnaden är ofta 5–10×.
+ * Then the same thing with para::CacheAligned in between. The difference is
+ * often 5–10×.
  *
- * ── Varför C inte kunde göra det här ──────────────────────────────────────
+ * ── Why C could not do this ───────────────────────────────────────────────
  *
- * För att mäta ville vi ha atomära uppräkningar (annars mäter vi en
- * kapplöpning) på ETT VANLIGT fält i en vanlig array. I C krävde det att hela
- * arrayen deklarerades _Atomic, vilket ändrar dess layout och dess
- * kodgenerering — alltså mäter man inte längre samma array.
+ * To measure we wanted atomic increments (otherwise we measure a race) on AN
+ * ORDINARY field in an ordinary array. In C that required declaring the whole
+ * array _Atomic, which changes its layout and its code generation — so you
+ * are no longer measuring the same array.
  *
  *     std::atomic_ref<long> r{slots[i]};     // C++20
  *     r.fetch_add(1, std::memory_order_relaxed);
  *
- * atomic_ref lägger atomiciteten på ÅTKOMSTEN, inte på typen. Arrayen är
- * fortfarande en vanlig long-array; bara den här åtkomsten är atomär. Det är
- * skillnaden mellan att mäta falsk delning och att mäta en annan datatyp.
+ * atomic_ref puts the atomicity on the ACCESS, not on the type. The array is
+ * still an ordinary long array; only this access is atomic. That is the
+ * difference between measuring false sharing and measuring a different data
+ * type.
  */
 #include <paracore.hpp>
 
@@ -37,10 +40,10 @@ namespace {
 constexpr int kIters = 2000000;
 constexpr std::size_t kMaxThreads = 64;
 
-/* Samma cachelinje: åtta longs i rad är 64 byte. */
+/* The same cache line: eight longs in a row are 64 bytes. */
 alignas(para::kCacheLine) long packed[kMaxThreads];
 
-/* Var för sig. */
+/* Each on its own. */
 para::CacheAligned<long> spread[kMaxThreads];
 
 template <class GetSlot> double run(unsigned n, GetSlot slot_of) {
@@ -78,12 +81,12 @@ int main(int argc, char **argv) {
     const double ms_packed = run(n, [](unsigned i) -> long & { return packed[i]; });
     const double ms_spread = run(n, [](unsigned i) -> long & { return spread[i].value; });
 
-    std::println("{} trådar × {} uppräkningar", n, kIters);
-    std::println("  samma cachelinje  : {:8.1f} ms", ms_packed);
+    std::println("{} threads × {} increments", n, kIters);
+    std::println("  same cache line   : {:8.1f} ms", ms_packed);
     std::println("  CacheAligned      : {:8.1f} ms", ms_spread);
-    std::println("  skillnad          : {:8.1f}×", ms_packed / ms_spread);
+    std::println("  difference        : {:8.1f}×", ms_packed / ms_spread);
     std::println("");
-    std::println("En siffra nära 1,0 vid n=1 är väntad — falsk delning kräver");
-    std::println("att någon annan skriver. Kör om med fler trådar.");
+    std::println("A number close to 1.0 at n=1 is expected — false sharing needs");
+    std::println("someone else writing. Run again with more threads.");
     return 0;
 }

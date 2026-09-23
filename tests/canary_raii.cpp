@@ -1,32 +1,33 @@
-/* KANARIEFÅGEL 5 — ett undantag som lämnar en kritisk sektion låst.
+/* CANARY 5 — an exception that leaves a critical section locked.
  *
- * NY I C++-VERSIONEN, och den kunde inte finnas i C-versionen: C har inga
- * undantag, och därmed inte den här buggklassen.
+ * NEW IN THE C++ VERSION, and it could not exist in the C version: C has no
+ * exceptions, and therefore not this class of bug.
  *
- * Programmet tar ett lås för hand, kastar, fångar undantaget utanför — och
- * unlock() nås aldrig. Låset är taget för alltid. Nästa tråd som vill ha det
- * hänger, och `make canary` kräver att watchdogen dödar programmet.
+ * The program takes a lock by hand, throws, catches the exception outside —
+ * and unlock() is never reached. The lock is held forever. The next thread
+ * that wants it hangs, and `make canary` requires the watchdog to kill the
+ * program.
  *
- * ── Varför den är värd en egen kanariefågel ───────────────────────────────
+ * ── Why it deserves a canary of its own ───────────────────────────────────
  *
- * Den delar verktyg med kanariefågel 3 (watchdogen), vilket bryter mot
- * mönstret "ett program, ett verktyg". Den finns ändå, för att den bevisar
- * något annat: att en hel buggklass blev MÖJLIG i och med språkbytet.
+ * It shares a tool with canary 3 (the watchdog), which breaks the "one
+ * program, one tool" pattern. It exists anyway, because it proves something
+ * else: that a whole class of bugs became POSSIBLE with the language change.
  *
- * Varje gång du skriver `m.lock()` i stället för `std::lock_guard g{m}` har
- * du skrivit det här programmet. Skillnaden mot det här är bara att din
- * throw ligger tre funktioner ned i en allokering som råkade misslyckas.
+ * Every time you write `m.lock()` instead of `std::lock_guard g{m}` you have
+ * written this program. The only difference is that your throw sits three
+ * functions down, in an allocation that happened to fail.
  *
- * Kanariefågel 3 säger "watchdogen fungerar". Den här säger "så här ser en
- * hängning ut när den beror på ett undantag", och den skillnaden är exakt vad
- * du behöver känna igen klockan två på natten.
+ * Canary 3 says "the watchdog works". This one says "this is what a hang
+ * looks like when it is caused by an exception", and that difference is
+ * exactly what you need to recognise at two in the morning.
  *
- * FIXA DEN ALDRIG. Men gör om den en gång: byt de två handskrivna raderna mot
+ * NEVER FIX IT. But redo it once: replace the two handwritten lines with
  *
  *     std::lock_guard g{m};
  *
- * kör om, och se att programmet avslutas normalt. Det är hela RAII-argumentet
- * på tre rader, mätt i stället för påstått. Sätt sedan tillbaka.
+ * run it again, and see the program exit normally. That is the whole RAII
+ * argument in three lines, measured instead of claimed. Then put it back.
  */
 #include <core/mutex.hpp>
 #include <core/thread.hpp>
@@ -38,25 +39,25 @@ namespace {
 
 para::Mutex m;
 
-void kritisk_sektion_utan_vakt() {
-    m.lock(); /* ← utan std::lock_guard. Det ÄR buggen. */
-    throw std::runtime_error("något gick fel mitt i den kritiska sektionen");
-    m.unlock(); /* nås aldrig — och kompilatorn varnar inte, för raden ÄR nåbar
-                  * så länge kompilatorn inte vet att throw alltid sker */
+void critical_section_without_guard() {
+    m.lock(); /* ← without std::lock_guard. That IS the bug. */
+    throw std::runtime_error("something went wrong in the middle of the critical section");
+    m.unlock(); /* never reached — and the compiler does not warn, because the
+                 * line IS reachable as far as the compiler knows */
 }
 
 } // namespace
 
 int main() {
     try {
-        kritisk_sektion_utan_vakt();
+        critical_section_without_guard();
     } catch (const std::exception &e) {
-        std::printf("fångade: %s\n", e.what());
-        std::printf("och nu är låset taget för alltid. nästa tråd hänger.\n");
+        std::printf("caught: %s\n", e.what());
+        std::printf("and now the lock is held forever. the next thread hangs.\n");
         std::fflush(stdout);
     }
 
-    /* Nästa tråd hänger. Watchdogen ska döda oss här. */
+    /* The next thread hangs. The watchdog must kill us here. */
     {
         para::Thread t{[] {
             m.lock();
@@ -64,6 +65,6 @@ int main() {
         }};
     }
 
-    std::printf("den här raden ska aldrig nås\n");
+    std::printf("this line must never be reached\n");
     return 0;
 }

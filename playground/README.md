@@ -1,59 +1,64 @@
-# playground/ — din verkstad
+# playground/ — your workshop
 
-Varje `.cpp`-fil här blir ett **eget program** med en egen `main()`. Ingen
-registrering, ingen redigering av Makefilen: `wildcard` plockar upp filen så
-fort den finns.
+Every `.cpp` file here becomes a **program of its own** with its own `main()`.
+No registration, no editing the Makefile: `wildcard` picks the file up as soon
+as it exists.
 
 ```
-make new PROG=minlek     # skapar playground/minlek.cpp från mall
-make run PROG=minlek     # bygger och kör den
-make list                # visar allt som ligger här
+make new PROG=myexp      # creates playground/myexp.cpp from a template
+make run PROG=myexp      # builds and runs it
+make list                # shows everything here
 ```
 
-Utelämnar du `PROG` menas `hello`.
+If you leave out `PROG`, `hello` is meant.
 
-## Varför det här inte är ett test
+## Why this is not a test
 
-Testerna i `tests/` måste vara deterministiska — de fäller grinden när de
-faller, och ett test som ibland är rött lär dig att köra om i stället för att
-läsa. Lekplatsen har inget sådant ansvar. Här får du skriva programmet som
-hänger sig, mäta samma sak tre gånger och få tre svar, eller lämna en halv
-tanke kvar över natten. Det är poängen med att de är skilda mappar.
+The tests in `tests/` must be deterministic — they fail the gate when they
+fail, and a test that is sometimes red teaches you to re-run instead of read.
+The playground has no such responsibility. Here you may write the program that
+hangs, measure the same thing three times and get three answers, or leave half
+a thought overnight. That is the point of them being separate directories.
 
-Det betyder också att **inget här körs av `make check`**. En trasig fil i
-playground/ fäller inte grinden — men den fäller `make` (allt byggs), vilket
-är avsiktligt: kod som inte kompilerar ska synas direkt.
+It also means that **nothing here is run by `make check`**. A broken file in
+playground/ does not fail the gate — but it does fail `make` (everything is
+built), which is intended: code that does not compile should be visible
+immediately.
 
-## Verktygen fungerar här också
+## The tools work here too
 
-Lekplatsen bygger mot samma bibliotek och samma flaggor som resten av repot,
-så sanitizern ser din experimentkod precis som den ser bibliotekets:
+The playground builds against the same library and the same flags as the rest
+of the repo, so the sanitizer sees your experiment code just like it sees the
+library's:
 
 ```
 make run PROG=x          # MODE=debug
-make tsan-run PROG=x     # under ThreadSanitizer — kapplöpningar, låsordning
-make asan-run PROG=x     # under ASan + UBSan — läckor, use-after-free, UB
-make bench PROG=x        # release-bygge, -O2, för mätningar
+make tsan-run PROG=x     # under ThreadSanitizer — races, lock order
+make asan-run PROG=x     # under ASan + UBSan — leaks, use-after-free, UB
+make bench PROG=x        # release build, -O2, for measurements
 ```
 
-`make tsan-run` är den du vill ha när ett experiment "fungerar ibland".
-Det är nästan aldrig tur — det är nästan alltid en kapplöpning, och TSan
-pekar på den i stället för att låta dig gissa.
+`make tsan-run` is the one you want when an experiment "works sometimes". It is
+almost never luck — it is almost always a race, and TSan points at it instead of
+letting you guess.
 
-## Det som redan ligger här
+## What is already here
 
-| fil | vad den visar |
+| file | what it shows |
 |---|---|
-| `hello.cpp` | att biblioteket lever, och vilka moduler som är byggda än så länge |
-| `counter.cpp` | en oskyddad räknare mot en skyddad — kapplöpningen du kan se |
-| `falsesharing.cpp` | falsk delning, `std::atomic_ref`, 19,4× på 8 trådar (mätt) |
+| `hello.cpp` | that the library is alive, and which modules are built so far |
+| `counter.cpp` | an unprotected counter against a protected one — the race you can see |
+| `falsesharing.cpp` | false sharing, `std::atomic_ref`, 19.4× at 8 threads (measured) |
+| `bench_false_sharing.cpp` | the false-sharing curve over 1–16 threads, with and without `CacheAligned` (track module 1) |
+| `litmus_sb.cpp`, `litmus_sb_relaxed.cpp` | the store-buffering litmus test (track module 1) |
 
-De tre är skrivna för att läsas, inte bara köras. Börja med `counter.cpp` och
-kör den under `make tsan-run PROG=counter`.
+They are written to be read, not just run. Start with `counter.cpp` and run it
+under `make tsan-run PROG=counter`.
 
-## Mappen är din
+## The directory is yours
 
-Ingenting i repot läser innehållet i playground/ utom Makefilen, och den bryr
-sig bara om att filerna kompilerar. Radera, skriv om, strö skräpfiler — det
-enda som är värt att veta är att filerna **committas** som allt annat. Vill du
-ha något osparat, lägg det i `playground/scratch/`, som är git-ignorerad.
+Nothing in the repo reads the contents of playground/ except the Makefile, and
+it only cares that the files compile. Delete, rewrite, scatter scratch files —
+the only thing worth knowing is that the files are **committed** like
+everything else. If you want something unsaved, put it in `playground/scratch/`,
+which is git-ignored.

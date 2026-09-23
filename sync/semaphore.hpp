@@ -1,25 +1,25 @@
-/* sync/semaphore.hpp — en räknad tillståndsbiljett.
+/* sync/semaphore.hpp — a counted permission ticket.
  *
- * STATUS: STUB — du bygger den i MODUL 5.
+ * STATUS: STUB — you build it in MODULE 4.
  *
- * Semaforen är den enklaste primitiven att implementera och den svåraste att
- * resonera om. En monitor har ett lås, ett tillstånd och ett predikat du kan
- * peka på; en semafor har ett tal, och vad talet BETYDER lever bara i huvudet
- * på den som skrev koden. Det är därför modul 5 bygger poolen på monitorer och
- * inte på semaforer — men du ska ha skrivit en semafor för att veta varför du
- * väljer bort den.
+ * The semaphore is the simplest primitive to implement and the hardest to
+ * reason about. A monitor has a lock, a state and a predicate you can point
+ * at; a semaphore has a number, and what the number MEANS lives only in the
+ * head of whoever wrote the code. That is why module 4 builds the pool on
+ * monitors and not on semaphores — but you should have written a semaphore to
+ * know why you opt out of it.
  *
- * Bygg den på para::Mutex + para::CondVar, inte på sem_t och inte på
- * std::counting_semaphore: poängen är predikatet i while-loopen, och båda de
- * andra gömmer det. std::counting_semaphore finns (C++20) och är snabbare —
- * den använder atomics och futex direkt utan att ta ett lås i det
- * okontenderade fallet. Mät mot den när din är klar, och förklara var
- * skillnaden kommer ifrån.
+ * Build it on para::Mutex + para::CondVar, not on sem_t and not on
+ * std::counting_semaphore: the point is the predicate in the while loop, and
+ * both of the others hide it. std::counting_semaphore exists (C++20) and is
+ * faster — it uses atomics and futex directly without taking a lock in the
+ * uncontended case. Measure against it when yours is done, and explain where
+ * the difference comes from.
  *
- * TAKET ÄR EN MALLPARAMETER, precis som i std::counting_semaphore<N>, och av
- * samma skäl: ett tak känt vid kompilering låter implementationen välja
- * representation, och ett release() som spräcker taket blir ett fel du kan
- * assert:a på i stället för ett tyst wraparound.
+ * THE CEILING IS A TEMPLATE PARAMETER, just as in std::counting_semaphore<N>,
+ * and for the same reason: a ceiling known at compile time lets the
+ * implementation choose its representation, and a release() that bursts the
+ * ceiling becomes an error you can assert on instead of a silent wraparound.
  */
 #ifndef PARACORE_SYNC_SEMAPHORE_HPP
 #define PARACORE_SYNC_SEMAPHORE_HPP

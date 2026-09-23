@@ -1,5 +1,5 @@
-/* ds/detail/hashmap_impl.hpp — MODUL 10 fyller den här filen.
- * Se ds/detail/stack_impl.hpp om varför implementationen ligger i en header. */
+/* ds/detail/hashmap_impl.hpp — MODULE 9 fills this file.
+ * See ds/detail/stack_impl.hpp for why the implementation lives in a header. */
 #ifndef PARACORE_DS_DETAIL_HASHMAP_IMPL_HPP
 #define PARACORE_DS_DETAIL_HASHMAP_IMPL_HPP
 

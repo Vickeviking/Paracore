@@ -1,9 +1,10 @@
-/* Internt för src/core. Ligger medvetet INTE i core/ — det som ligger i
- * core/ är publikt, och gränsen ska gå att se i filträdet.
+/* Internal to src/core. Deliberately NOT in core/ — what lives in core/ is
+ * public, and the boundary should be visible in the file tree.
  *
- * (Mallarna i ds/ och mem/ kan inte följa exakt den regeln — en mall måste nå
- * varje översättningsenhet — så där heter den privata halvan ds/detail/ och
- * mem/detail/. Samma regel, annan mekanik. Se ds/detail/stack_impl.hpp.) */
+ * (The templates in ds/ and mem/ cannot follow exactly that rule — a template
+ * has to reach every translation unit — so there the private half is called
+ * ds/detail/ and mem/detail/. Same rule, different mechanics. See
+ * ds/detail/stack_impl.hpp.) */
 #ifndef PARACORE_SRC_CORE_INTERNAL_HPP
 #define PARACORE_SRC_CORE_INTERNAL_HPP
 
@@ -13,7 +14,7 @@ namespace para::detail {
 
 void set_os_error(int err) noexcept;
 
-/* errno -> Status, och spara den råa koden för felsökning. */
+/* errno -> Status, and keep the raw code for debugging. */
 [[nodiscard]] Status from_errno(int err) noexcept;
 
 } // namespace para::detail

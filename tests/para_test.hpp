@@ -1,41 +1,47 @@
-/* tests/para_test.hpp — ett litet testramverk byggt för samtidighetsbuggar.
+/* tests/para_test.hpp — a small test framework built for concurrency bugs.
  *
- * Tre saker skiljer det från "assert i en main":
+ * Three things set it apart from "assert in a main":
  *
- *  1. VARJE TEST KÖRS I EN EGEN PROCESS (fork), med en WATCHDOG. Ett test som
- *     inte blir klart inom tidsgränsen rapporteras som TIMEOUT och dödas.
- *     Det är så en deadlock ser ut, och det är hela skälet till konstruktionen:
- *     ett hängt test i en vanlig testbinär hänger hela sviten och CI, och du
- *     får ingen aning om vilket test det var. Här får du testets namn, dess
- *     fil, och de andra testerna kör vidare.
+ *  1. EVERY TEST RUNS IN ITS OWN PROCESS (fork), with a WATCHDOG. A test that
+ *     does not finish within the time limit is reported as TIMEOUT and
+ *     killed. That is what a deadlock looks like, and it is the whole reason
+ *     for the design: a hung test in an ordinary test binary hangs the whole
+ *     suite and CI, and you have no idea which test it was. Here you get the
+ *     test's name, its file, and the other tests keep running.
  *
- *  2. EN KRASCH ÄR ETT RESULTAT, INTE SLUTET. SIGSEGV/SIGABRT i ett test
- *     fångas av föräldern och rapporteras med signalnamn. Sanitizerns abort
- *     ser likadan ut, vilket är precis vad vi vill — och para::not_built()
- *     också, vilket är vad en stub ska göra.
+ *  2. A CRASH IS A RESULT, NOT THE END. SIGSEGV/SIGABRT in a test is caught
+ *     by the parent and reported with the signal name. A sanitizer's abort
+ *     looks the same, which is exactly what we want — and so does
+ *     para::not_built(), which is what a stub should do.
  *
- *  3. RACE-TESTER ÄR MÄRKTA. PARA_TEST_RACE registrerar ett test som är
- *     meningsfullt att köra MÅNGA gånger — `make stress` kör bara dem, 200
- *     varv, under ThreadSanitizer. Ett samtidighetstest som kördes en gång och
- *     gick igenom har inte bevisat något; det har bara inte råkat misslyckas.
+ *  3. RACE TESTS ARE TAGGED. PARA_TEST_RACE registers a test that is worth
+ *     running MANY times — `make stress` runs only those, 200 rounds, under
+ *     ThreadSanitizer. A concurrency test that ran once and passed has not
+ *     proven anything; it just did not happen to fail.
  *
- * Användning:
+ * Usage — the macro takes ONE argument, the test's name, which must be a
+ * valid C++ identifier (it becomes a function name):
  *
- *     PARA_TEST(min_grej_funkar) {
+ *     PARA_TEST(my_thing_works) {
  *         para::Mutex m;
  *         std::lock_guard g{m};
  *         PARA_ASSERT(true);
  *     }
  *
- * ── Vad som ändrades från C-versionen ─────────────────────────────────────
+ * The assertions are PARA_ASSERT, PARA_ASSERT_EQ, PARA_ASSERT_STATUS,
+ * PARA_ASSERT_OK, PARA_ASSERT_ERR, PARA_UNWRAP and PARA_ASSERT_NOT_BUILT —
+ * nothing else. (Googletest-style `TEST(Suite, Name)` and `CHECK_EQ` do not
+ * exist here.)
  *
- * Registreringen använde `__attribute__((constructor))`, en GCC-utvidgning.
- * Här är den ett objekt med statisk lagringstid vars konstruktor registrerar
- * testet — samma effekt, och det är standard-C++ i stället för en utvidgning.
+ * ── What changed from the C version ───────────────────────────────────────
  *
- * Och PARA_ASSERT_NOT_BUILT tar numera en MODUL, inte ett uttryck. Se
- * src/core/modules.cpp: byggplanen bor på ett ställe, och testsviten läser
- * den i stället för att gissa ur returkoder.
+ * Registration used `__attribute__((constructor))`, a GCC extension. Here it
+ * is an object with static storage duration whose constructor registers the
+ * test — same effect, and it is standard C++ instead of an extension.
+ *
+ * And PARA_ASSERT_NOT_BUILT now takes a MODULE, not an expression. See
+ * src/core/modules.cpp: the build plan lives in one place, and the test suite
+ * reads it instead of guessing from return codes.
  */
 #ifndef PARACORE_TESTS_PARA_TEST_HPP
 #define PARACORE_TESTS_PARA_TEST_HPP
@@ -52,15 +58,15 @@ using Fn = void (*)();
 
 enum class Tag {
     Plain = 0,
-    Race = 1 /* körs upprepat av `make stress` */
+    Race = 1 /* run repeatedly by `make stress` */
 };
 
 void register_test(const char *name, Fn fn, Tag tag, const char *file, int line) noexcept;
 
-/* Anropas av assert-makrona i barnprocessen. Återvänder aldrig. */
+/* Called by the assert macros in the child process. Never returns. */
 [[noreturn]] void fail(const char *file, int line, const char *fmt, ...) noexcept;
 
-/* Objektet som registrerar. Ett per PARA_TEST, med statisk lagringstid. */
+/* The object that registers. One per PARA_TEST, with static storage duration. */
 struct Registrar {
     Registrar(const char *name, Fn fn, Tag tag, const char *file, int line) noexcept {
         register_test(name, fn, tag, file, line);
@@ -80,7 +86,7 @@ struct Registrar {
 #define PARA_ASSERT(cond)                                                                          \
     do {                                                                                           \
         if (!(cond)) {                                                                             \
-            ::para::test::fail(__FILE__, __LINE__, "PARA_ASSERT(%s) föll", #cond);                 \
+            ::para::test::fail(__FILE__, __LINE__, "PARA_ASSERT(%s) failed", #cond);               \
         }                                                                                          \
     } while (0)
 
@@ -101,7 +107,7 @@ struct Registrar {
         if (para_st_ != para_ex_) {                                                                \
             const auto got_ = ::para::to_string(para_st_);                                         \
             const auto want_ = ::para::to_string(para_ex_);                                        \
-            ::para::test::fail(__FILE__, __LINE__, "%s gav %d (%.*s), väntade %d (%.*s)", #expr,   \
+            ::para::test::fail(__FILE__, __LINE__, "%s gave %d (%.*s), expected %d (%.*s)", #expr, \
                                static_cast<int>(para_st_), static_cast<int>(got_.size()),          \
                                got_.data(), static_cast<int>(para_ex_),                            \
                                static_cast<int>(want_.size()), want_.data());                      \
@@ -110,39 +116,39 @@ struct Registrar {
 
 #define PARA_ASSERT_OK(expr) PARA_ASSERT_STATUS(expr, ::para::Status::Ok)
 
-/* Ett Result<T> som ska bära ett fel. */
+/* A Result<T> that must carry an error. */
 #define PARA_ASSERT_ERR(expr, expected)                                                            \
     do {                                                                                           \
         auto para_r_ = (expr);                                                                     \
         if (para_r_.has_value()) {                                                                 \
-            ::para::test::fail(__FILE__, __LINE__, "%s lyckades, väntade ett fel", #expr);         \
+            ::para::test::fail(__FILE__, __LINE__, "%s succeeded, expected an error", #expr);      \
         }                                                                                          \
         PARA_ASSERT_STATUS(para_r_.error(), expected);                                             \
     } while (0)
 
-/* Ett Result<T> som ska bära ett värde — ger värdet tillbaka. */
+/* A Result<T> that must carry a value — hands the value back. */
 #define PARA_UNWRAP(out, expr)                                                                     \
     auto para_res_##out = (expr);                                                                  \
     do {                                                                                           \
         if (!para_res_##out.has_value()) {                                                         \
             const auto e_ = ::para::to_string(para_res_##out.error());                             \
-            ::para::test::fail(__FILE__, __LINE__, "%s misslyckades: %.*s", #expr,                 \
+            ::para::test::fail(__FILE__, __LINE__, "%s failed: %.*s", #expr,                       \
                                static_cast<int>(e_.size()), e_.data());                            \
         }                                                                                          \
     } while (0);                                                                                   \
     auto &out = *para_res_##out
 
-/* För byggplanen: dokumenterar i testsviten att modulen ännu inte är byggd.
- * När du vänder raden i src/core/modules.cpp faller det här testet — och DET
- * är signalen att gå hit och skriva ett riktigt test. `make progress` läser
- * samma tabell. */
+/* For the build plan: documents in the test suite that the module is not
+ * built yet. When you flip the row in src/core/modules.cpp this test fails —
+ * and THAT is the signal to go here and write a real test. `make progress`
+ * reads the same table. */
 #define PARA_ASSERT_NOT_BUILT(module)                                                              \
     do {                                                                                           \
         if (::para::is_built(module)) {                                                            \
             const auto n_ = ::para::module_name(module);                                           \
             ::para::test::fail(__FILE__, __LINE__,                                                 \
-                               "MODUL %.*s är byggd nu — ta bort den här raden och skriv "         \
-                               "riktiga tester för den",                                           \
+                               "MODULE %.*s is built now — delete this row and write real "        \
+                               "tests for it",                                                     \
                                static_cast<int>(n_.size()), n_.data());                            \
         }                                                                                          \
     } while (0)

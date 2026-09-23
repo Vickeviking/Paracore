@@ -1,40 +1,43 @@
-/* exec/scheduler.hpp — work-stealing. Kursens slutprov.
+/* exec/scheduler.hpp — work-stealing. The course's final exam.
  *
- * STATUS: STUB — du bygger den i MODUL 12 (AMP kapitel 16).
+ * STATUS: STUB — you build it in MODULE 11 (AMP chapter 16).
  *
- * Skillnaden mot exec/pool.hpp är inte "snabbare". Det är en annan datamodell:
- * poolen har EN delad kö som alla arbetare slåss om, schemaläggaren ger varje
- * arbetare en EGEN dubbeländad kö.
+ * The difference from exec/pool.hpp is not "faster". It is a different data
+ * model: the pool has ONE shared queue all workers fight over, the scheduler
+ * gives every worker its OWN double-ended queue.
  *
- *   push/pop i BOTTEN  — bara ägaren rör den. Nästan gratis, ingen CAS i det
- *                        vanliga fallet.
- *   steal i TOPPEN     — andra trådar, med CAS, och sällsynt.
+ *   push/pop at the BOTTOM  — only the owner touches it. Almost free, no CAS
+ *                             in the common case.
+ *   steal at the TOP        — other threads, with CAS, and rarely.
  *
- * Det är Chase–Lev-kön, och den är svår på exakt ett ställe: när kön har ett
- * enda element kan ägarens pop och en tjuvs steal syfta på SAMMA element, och
- * de måste komma överens med en CAS. Läs Chase & Lev (2005) och Lê m.fl. (2013)
- * som rättade minnesordningarna — de senare för att den ursprungliga artikeln
- * var fel just på ordningarna, vilket är den bästa möjliga illustrationen av
- * varför modul 2 fanns.
+ * That is the Chase–Lev deque, and it is hard in exactly one place: when the
+ * deque has a single element, the owner's pop and a thief's steal can refer
+ * to the SAME element, and they have to agree with a CAS. Read Chase & Lev
+ * (2005) and Lê et al. (2013), who corrected the memory orderings — the latter
+ * because the original paper was wrong precisely about the orderings, which is
+ * the best possible illustration of why module 1 existed.
  *
- * Här möts hela biblioteket: minnesmodellen (modul 2), den växande bufferten
- * som ingen får frigöra för tidigt (modul 9), kön (modul 8), barriären (11).
+ * The whole library meets here: the memory model (module 1), the growing
+ * buffer nobody may free too early (module 8), the queue (module 7), the
+ * barrier (module 10).
  *
- * Stölddisciplinen är egna beslut du ska motivera med mätningar:
- *   - slumpvis offer, eller granne först?
- *   - backoff efter misslyckad stöld?
- *   - när parkerar en arbetare i stället för att snurra? (En tomgående
- *     arbetare som spinnar stjäl en kärna från en som arbetar.)
+ * The stealing discipline is your own decisions, to be justified with
+ * measurements:
+ *   - random victim, or neighbour first?
+ *   - backoff after a failed steal?
+ *   - when does a worker park instead of spinning? (An idle worker that spins
+ *     steals a core from one that is working.)
  *
- * ── C++-specifikt i den här modulen ───────────────────────────────────────
+ * ── C++-specific in this module ───────────────────────────────────────────
  *
- * Chase–Lev-kön VÄXER, och den gamla bufferten får inte frigöras medan en
- * tjuv fortfarande läser ur den. I C var svaret "läck, eller bygg hazard
- * pointers". Här är det samma svar — men mem/reclaim.hpp är en mall nu, så
- * domänen vet vad den frigör och destruktorn körs. En `std::vector` som
- * byts under en tjuv är däremot en use-after-free med extra steg: bufferten
- * måste vara en rå, atomärt bytt array. Det är ett av få ställen i hela
- * repot där STL-behållarna inte duger, och du ska kunna säga varför.
+ * The Chase–Lev deque GROWS, and the old buffer must not be freed while a
+ * thief is still reading from it. In C the answer was "leak, or build hazard
+ * pointers". Here it is the same answer — but mem/reclaim.hpp is a template
+ * now, so the domain knows what it frees and the destructor runs. A
+ * `std::vector` swapped under a thief, on the other hand, is a use-after-free
+ * with extra steps: the buffer has to be a raw, atomically swapped array. It
+ * is one of the few places in the whole repo where the STL containers do not
+ * do, and you should be able to say why.
  */
 #ifndef PARACORE_EXEC_SCHEDULER_HPP
 #define PARACORE_EXEC_SCHEDULER_HPP
@@ -65,18 +68,19 @@ public:
     Scheduler(const Scheduler &) = delete;
     Scheduler &operator=(const Scheduler &) = delete;
 
-    /* Lämna in UTIFRÅN (från en icke-arbetartråd). Går till en slumpvis
-     * arbetares kö. */
+    /* Submit from OUTSIDE (from a non-worker thread). Goes to a random
+     * worker's deque. */
     template <class F> [[nodiscard]] Result<Future<std::invoke_result_t<F &>>> submit(F &&f) {
         (void)f;
         return fail(Status::NotBuilt);
     }
 
-    /* Lämna in INIFRÅN ett jobb — hamnar i den egna arbetarens kö, vilket är
-     * hela poängen med divide and conquer: barnen körs oftast av samma tråd
-     * och därmed med varm cache. Status::Invalid om den anropas från en tråd
-     * som inte är en arbetare; att tyst falla tillbaka på submit() hade gömt
-     * precis den bugg som gör att en rekursiv algoritm inte skalar. */
+    /* Submit from INSIDE a job — lands in the calling worker's own deque,
+     * which is the whole point of divide and conquer: the children usually
+     * run on the same thread and therefore with a warm cache.
+     * Status::Invalid if called from a thread that is not a worker; silently
+     * falling back to submit() would have hidden exactly the bug that makes a
+     * recursive algorithm not scale. */
     template <class F> [[nodiscard]] Result<Future<std::invoke_result_t<F &>>> spawn(F &&f) {
         (void)f;
         return fail(Status::NotBuilt);
@@ -84,7 +88,7 @@ public:
 
     [[nodiscard]] Status wait_idle() noexcept;
 
-    /* Rapporten kräver de här siffrorna ÖVER TID, inte bara i slutet. */
+    /* The report needs these numbers OVER TIME, not just at the end. */
     [[nodiscard]] Result<SchedulerStats> stats() const noexcept;
 
 private:

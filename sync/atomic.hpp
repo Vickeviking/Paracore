@@ -1,46 +1,50 @@
-/* sync/atomic.hpp — minnesmodellen, gjord greppbar.
+/* sync/atomic.hpp — the memory model, made greppable.
  *
- * STATUS: implementerad (hjälpmedel). Innehållet i MODUL 2 är att förstå
- * dem, inte att skriva dem.
+ * STATUS: implemented (helpers). The content of MODULE 1 was understanding
+ * them, not writing them.
  *
- * Ingen egen atomtyp: <atomic> är standarden och en egen abstraktion ovanpå
- * skulle gömma exakt det du ska lära dig se — vilken memory_order varje
- * operation bär. Det här är hjälpmedel runt omkring.
+ * No atomic type of our own: <atomic> is the standard, and an abstraction of
+ * our own on top would hide exactly what you should learn to see — which
+ * memory_order every operation carries. These are helpers around it.
  *
- * ATT MODELLEN ÄR DENSAMMA ÄR INTE EN SLUMP. C++11:s minnesmodell och C11:s
- * är samma modell: Boehms "Threads Cannot Be Implemented as a Library" (2005)
- * skrevs om C och C++, fixen standardiserades i C++11, och C11 tog över den.
- * std::memory_order har samma sex värden med samma semantik som
- * <stdatomic.h>. Allt du mätte i C gäller ordagrant här.
+ * THAT THE MODEL IS THE SAME IS NO ACCIDENT. The C++11 memory model and C11's
+ * are the same model: Boehm's "Threads Cannot Be Implemented as a Library"
+ * (2005) was written about C and C++, the fix was standardised in C++11, and
+ * C11 adopted it. std::memory_order has the same six values with the same
+ * semantics as <stdatomic.h>. Everything you measured in C holds word for
+ * word here.
  *
- * De sex ordningarna, kortfattat:
- *   relaxed — atomiskt. Ingenting mer. Ingen ordning mot något annat.
- *   consume — avrådd i praktiken; kompilatorer implementerar den som acquire.
- *             Läs varför, använd den inte.
- *   acquire — en läsning som ser en release-skrivning ser också allt som
- *             skedde före den skrivningen.
- *   release — parar med acquire ovan. Ensam garanterar den ingenting.
- *   acq_rel — för läs-modifiera-skriv (CAS, fetch_add) som gör bådadera.
- *   seq_cst — som acq_rel, plus en TOTAL ordning över alla seq_cst-operationer
- *             i hela programmet. Enda ordningen som räddar IRIW. Dyrast.
+ * The six orderings, briefly:
+ *   relaxed — atomic. Nothing more. No ordering against anything else.
+ *   consume — discouraged in practice; compilers implement it as acquire.
+ *             Read why, do not use it.
+ *   acquire — a load that sees a release store also sees everything that
+ *             happened before that store.
+ *   release — pairs with acquire above. On its own it guarantees nothing.
+ *   acq_rel — for read-modify-write (CAS, fetch_add) that does both.
+ *   seq_cst — like acq_rel, plus a TOTAL order over all seq_cst operations in
+ *             the whole program. The only ordering that rescues IRIW — and
+ *             the only one that forbids store→load reordering, which is why
+ *             Peterson's lock (module 2) needs it. The most expensive.
  *
- * Standardvärdet i <atomic> är seq_cst. Rätt förval och fel svar i en het
- * loop; skillnaden är din att mäta i modul 4.
+ * The default in <atomic> is seq_cst. The right default and the wrong answer
+ * in a hot loop; module 1 measured the difference.
  *
- * TVÅ SAKER C++ GER SOM C INTE HADE, och som modul 2 ska använda:
+ * TWO THINGS C++ GIVES THAT C DID NOT HAVE, and that module 1 uses:
  *
- *   std::atomic_ref<T>     atomära operationer på ett VANLIGT objekt — ett
- *                          element i en int-array, ett fält i en struct du
- *                          inte äger. C har ingen portabel motsvarighet;
- *                          där fick man göra hela arrayen _Atomic och tappa
- *                          all vektorisering. Falsk delning-experimenten
- *                          bygger på den: en array, åtta trådar, ett
- *                          atomic_ref var, och sedan samma sak med
- *                          CacheAligned emellan.
+ *   std::atomic_ref<T>     atomic operations on an ORDINARY object — an
+ *                          element in an int array, a field in a struct you
+ *                          do not own. C has no portable equivalent; there
+ *                          you had to make the whole array _Atomic and lose
+ *                          all vectorisation. The false-sharing experiments
+ *                          build on it: one array, eight threads, one
+ *                          atomic_ref each, and then the same thing with
+ *                          CacheAligned in between.
  *
- *   is_always_lock_free    en compile-time-fråga. Se kanariefågel 5: på
- *                          x86-64 svarar clang++ och g++ OLIKA om en
- *                          16-bytes taggad pekare, med samma flaggor.
+ *   is_always_lock_free    a compile-time question. See
+ *                          tests/probe_lockfree.cpp (`make lockfree`): on
+ *                          x86-64 clang++ and g++ answer DIFFERENTLY about a
+ *                          16-byte tagged pointer, with the same flags.
  */
 #ifndef PARACORE_SYNC_ATOMIC_HPP
 #define PARACORE_SYNC_ATOMIC_HPP
@@ -52,30 +56,32 @@
 
 namespace para {
 
-/* Cachelinjen. Enheten för koherenstrafik och därmed enheten för falsk
- * delning: två variabler i samma linje delas av hårdvaran även när de inte
- * delas av programmet. 64 byte på x86-64 och på Cortex-A76 (Pi 5).
+/* The cache line. The unit of coherence traffic and therefore the unit of
+ * false sharing: two variables in the same line are shared by the hardware
+ * even when they are not shared by the program. 64 bytes on x86-64 and on
+ * Cortex-A76 (Pi 5).
  *
- * Varför inte std::hardware_destructive_interference_size? För att den är en
- * ABI-egenskap: GCC varnar när du använder den (-Winterference-size), eftersom
- * värdet måste vara detsamma i varje översättningsenhet som delar en typ, och
- * ingen kan garantera det över biblioteksgränser. En konstant du mäter och
- * verifierar är ärligare än en konstant som byter värde mellan kompilatorer.
+ * Why not std::hardware_destructive_interference_size? Because it is an ABI
+ * property: GCC warns when you use it (-Winterference-size), since the value
+ * must be the same in every translation unit that shares a type, and nobody
+ * can guarantee that across library boundaries. A constant you measure and
+ * verify is more honest than a constant that changes value between
+ * compilers.
  *
- * Verifiera på maskinen:  getconf LEVEL1_DCACHE_LINESIZE
- * Modul 4 mäter vad den här konstanten är värd. */
+ * Verify on the machine:  getconf LEVEL1_DCACHE_LINESIZE
+ * Module 1 measured what this constant is worth (the false-sharing lab). */
 inline constexpr std::size_t kCacheLine = 64;
 
-/* Det här ersätter C-versionens PARA_CACHELINE_PAD-makro, och ersätter det
- * med något makrot inte kunde: en typ.
+/* This replaces the C version's PARA_CACHELINE_PAD macro, and replaces it
+ * with something the macro could not be: a type.
  *
  *     CacheAligned<std::atomic<std::size_t>> head_;
  *     CacheAligned<std::atomic<std::size_t>> tail_;
  *
- * Två fält, garanterat i olika cachelinjer, utan en enda handräknad char-array
- * som blir fel dagen någon lägger till ett fält. SPSC-kön i modul 8 är den
- * första som behöver den. Om du inte tror att den behövs: mät med och utan,
- * och tro sedan siffran. */
+ * Two fields, guaranteed to be in different cache lines, without a single
+ * hand-counted char array that goes wrong the day someone adds a field. The
+ * SPSC queue in module 7 is the first that needs it. If you do not believe it
+ * is needed: measure with and without, and then believe the number. */
 template <class T> struct alignas(kCacheLine) CacheAligned {
     T value{};
 
@@ -88,9 +94,9 @@ template <class T> struct alignas(kCacheLine) CacheAligned {
     const T *operator->() const noexcept { return &value; }
 };
 
-/* Tipsa CPU:n om att vi snurrar i en spin-loop. Sänker strömförbrukningen
- * och, viktigare, minskar straffet för minnesordningsspekulation när loopen
- * äntligen lämnas. PAUSE på x86, ISB på aarch64. */
+/* Hint to the CPU that we are spinning in a spin loop. Lowers power
+ * consumption and, more importantly, reduces the penalty for memory-order
+ * speculation when the loop is finally left. PAUSE on x86, ISB on aarch64. */
 inline void cpu_relax() noexcept {
 #if defined(__x86_64__) || defined(__i386__)
     __asm__ __volatile__("pause" ::: "memory");
@@ -101,10 +107,10 @@ inline void cpu_relax() noexcept {
 #endif
 }
 
-/* Barriärer, uttryckta så att de syns i koden.
- * Om du behöver en av dem i din algoritm: skriv ned VARFÖR i en kommentar,
- * med vilka två operationer den ordnar. En barriär utan motivering är en
- * barriär någon tar bort om ett halvår. */
+/* Fences, expressed so that they are visible in the code.
+ * If you need one of them in your algorithm: write down WHY in a comment,
+ * naming the two operations it orders. A fence without a justification is a
+ * fence someone removes in six months. */
 inline void fence_seq_cst() noexcept {
     std::atomic_thread_fence(std::memory_order_seq_cst);
 }
@@ -115,9 +121,9 @@ inline void fence_release() noexcept {
     std::atomic_thread_fence(std::memory_order_release);
 }
 
-/* Exponentiell backoff — modul 4:s TTAS-lås och modul 8:s eliminationsstack
- * använder samma. Håller sitt fönster som eget tillstånd, alltså en per tråd
- * och aldrig delad. */
+/* Exponential backoff — module 3's TTAS lock and module 7's elimination stack
+ * use the same one. Keeps its window as its own state, so one per thread and
+ * never shared. */
 class Backoff {
 public:
     explicit Backoff(unsigned max_spins = 1024) noexcept
@@ -141,14 +147,16 @@ private:
     unsigned max_;
 };
 
-/* Svarar på frågan kanariefågel 5 ställer: bär den här byggkonfigurationen en
- * äkta dubbelbred CAS, eller tar std::atomic tyst ett mutex bakom ryggen?
+/* Answers the question tests/probe_lockfree.cpp asks: does this build
+ * configuration carry a genuine double-width CAS, or does std::atomic silently
+ * take a mutex behind your back?
  *
- * Modul 9:s PARA_RECLAIM_TAGGED står och faller med svaret, och svaret beror
- * inte bara på maskinen utan på KOMPILATORN: på samma x86-64 med -mcx16 säger
- * clang++ ja och g++ nej, för att GCC vägrar kalla cmpxchg16b lock-free när
- * operanden kan ligga i skrivskyddat minne. En "lock-free" stack vars CAS är
- * ett bibliotekslås är inte lock-free, och ingenting i koden säger till. */
+ * Module 8's PARA_RECLAIM_TAGGED stands or falls with the answer, and the
+ * answer depends not only on the machine but on the COMPILER: on the same
+ * x86-64 with -mcx16 clang++ says yes and g++ says no, because GCC refuses to
+ * call cmpxchg16b lock-free when the operand may live in read-only memory. A
+ * "lock-free" stack whose CAS is a library lock is not lock-free, and nothing
+ * in the code tells you. */
 template <class T> inline constexpr bool is_lock_free_v = std::atomic<T>::is_always_lock_free;
 
 } // namespace para

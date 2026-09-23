@@ -1,10 +1,11 @@
-/* playground/hello.cpp — kolla att biblioteket lever.
+/* playground/hello.cpp — check that the library is alive.
  *
- *     make run                 # bygger och kör den här
- *     make run PROG=counter    # kör playground/counter.cpp i stället
+ *     make run                 # builds and runs this one
+ *     make run PROG=counter    # runs playground/counter.cpp instead
  *
- * Varje .cpp-fil i playground/ blir ett eget program. Lägg dit vad du vill —
- * mappen är din verkstad och testerna bryr sig inte om vad som finns här.
+ * Every .cpp file in playground/ becomes a program of its own. Put whatever
+ * you like there — the directory is your workshop and the tests do not care
+ * what is in it.
  */
 #include <paracore.hpp>
 
@@ -13,17 +14,17 @@
 
 int main() {
     std::println("paracore {}", para::kVersionString);
-    std::println("hårdvarutrådar: {}", para::hardware_concurrency());
-    std::println("cachelinje (antagen): {} byte", para::kCacheLine);
+    std::println("hardware threads: {}", para::hardware_concurrency());
+    std::println("cache line (assumed): {} bytes", para::kCacheLine);
 
-    /* Det som är byggt: */
+    /* What is built: */
     {
         para::Mutex m;
         std::lock_guard g{m};
         std::println("core/mutex.hpp ... ok");
     }
 
-    /* Det som inte är byggt ännu, och som säger det rakt ut: */
+    /* What is not built yet, and says so plainly: */
     const auto pool = para::ThreadPool::create(0, 128);
     std::println("exec/pool.hpp ... {}", pool ? "ok" : para::to_string(pool.error()));
 
@@ -31,6 +32,6 @@ int main() {
     std::println("ds/queue.hpp ... {}", para::to_string(q.push(1)));
 
     std::println("");
-    std::println("kör `make progress` för att se hela byggplanen.");
+    std::println("run `make progress` to see the whole build plan.");
     return 0;
 }

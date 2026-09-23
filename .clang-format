@@ -1,4 +1,4 @@
-# Paracore — stilen. clang-format äger den, .clang-tidy äger resten.
+# Paracore — the style. clang-format owns it, .clang-tidy owns the rest.
 Language: Cpp
 BasedOnStyle: LLVM
 Standard: c++20
@@ -18,4 +18,4 @@ NamespaceIndentation: None
 PackConstructorInitializers: NextLine
 SeparateDefinitionBlocks: Leave
 ReflowComments: false
-# Prosan i huvudkommentarerna är handsatt och bär kursinnehållet.
+# The prose in the header comments is hand-set and carries the course content.

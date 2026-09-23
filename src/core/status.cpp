@@ -46,29 +46,29 @@ std::string_view to_string(Status st) noexcept {
     case Status::Ok:
         return "ok";
     case Status::Invalid:
-        return "ogiltigt argument";
+        return "invalid argument";
     case Status::NoMemory:
-        return "slut på minne";
+        return "out of memory";
     case Status::Again:
-        return "inte just nu, försök igen";
+        return "not right now, try again";
     case Status::Busy:
-        return "upptagen";
+        return "busy";
     case Status::TimedOut:
-        return "tidsgränsen gick ut";
+        return "timed out";
     case Status::Closed:
-        return "stängd";
+        return "closed";
     case Status::Full:
         return "full";
     case Status::Empty:
-        return "tom";
+        return "empty";
     case Status::NotFound:
-        return "hittades inte";
+        return "not found";
     case Status::OsError:
-        return "systemanropet misslyckades";
+        return "the system call failed";
     case Status::NotBuilt:
-        return "inte byggd ännu (se modulen i huvudfilen)";
+        return "not built yet (see the module in the header)";
     }
-    return "okänd status";
+    return "unknown status";
 }
 
 } // namespace para

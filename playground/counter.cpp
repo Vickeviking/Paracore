@@ -1,16 +1,16 @@
-/* playground/counter.cpp — den minsta möjliga mätningen, och en fälla.
+/* playground/counter.cpp — the smallest possible measurement, and a trap.
  *
  *     make run PROG=counter
- *     make tsan-run PROG=counter      # samma program under ThreadSanitizer
+ *     make tsan-run PROG=counter      # the same program under ThreadSanitizer
  *
- * Byt PARA_SYNCED till 0 och kör om under tsan. Sedan: kör den OSYNKADE
- * versionen utan sanitizer några gånger och titta på resultatet. På x86-64
- * blir summan nästan rätt, ibland exakt rätt — vilket är precis varför man
- * inte kan testa sig till frånvaro av kapplöpningar. Verktyget hittar dem,
- * testet gör det inte.
+ * Switch PARA_SYNCED to 0 and run again under tsan. Then: run the UNSYNCED
+ * version without a sanitizer a few times and look at the result. On x86-64
+ * the sum comes out almost right, sometimes exactly right — which is exactly
+ * why you cannot test your way to the absence of races. The tool finds them,
+ * the test does not.
  *
- * Kör samma binär på Pi:n (aarch64) och jämför hur mycket den tappar. Det är
- * modul 2 i miniatyr.
+ * Run the same binary on the Pi (aarch64) and compare how much it loses. It
+ * is module 1 in miniature.
  */
 #include <paracore.hpp>
 
@@ -31,9 +31,9 @@ long unsynced = 0;
 void work() {
     for (int i = 0; i < kIters; ++i) {
 #if PARA_SYNCED
-        /* relaxed räcker: vi vill bara ha atomicitet, ingen ordning mot något
-         * annat minne. En seq_cst här hade kostat en full barriär per varv —
-         * mät skillnaden, den är stor. */
+        /* relaxed is enough: we only want atomicity, no ordering against any
+         * other memory. A seq_cst here would have cost a full barrier per
+         * round — measure the difference, it is large. */
         synced.fetch_add(1, std::memory_order_relaxed);
 #else
         unsynced++;
@@ -60,13 +60,13 @@ int main(int argc, char **argv) {
         for (unsigned i = 0; i < n; ++i) {
             ts.emplace_back(work);
         }
-    } /* joinas här */
+    } /* joined here */
     const double ms = static_cast<double>(para::bench::now_ns() - t0) / 1e6;
 
     const long got = PARA_SYNCED ? synced.load() : unsynced;
     const long want = static_cast<long>(n) * kIters;
-    std::println("{} trådar, {:.1f} ms, summa {} / {}  ({})", n, ms, got, want,
-                 got == want ? "rätt" : "TAPPADE UPPDATERINGAR");
+    std::println("{} threads, {:.1f} ms, sum {} / {}  ({})", n, ms, got, want,
+                 got == want ? "correct" : "LOST UPDATES");
     std::println("{:.1f} Mops/s", static_cast<double>(want) / (ms * 1000.0));
     return 0;
 }

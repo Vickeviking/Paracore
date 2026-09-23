@@ -1,26 +1,26 @@
-/* KANARIEFÅGEL 4 — en avsiktlig minnesläcka.
+/* CANARY 4 — a deliberate memory leak.
  *
- * `make canary` kräver att AddressSanitizer (och valgrind memcheck) FÄLLER
- * den. Modul 9 handlar om att frigöra minne i lock-free-strukturer utan att
- * dra undan det för någon annan; om ASan inte hittar en läcka på 32 byte
- * kommer den inte att hitta din heller.
+ * `make canary` requires AddressSanitizer (and valgrind memcheck) to CATCH it.
+ * Module 8 is about freeing memory in lock-free structures without pulling it
+ * out from under someone else; if ASan does not find a 32-byte leak it will
+ * not find yours either.
  *
- * NEW OCH INTE MALLOC, med flit: i C++ går minne oftare förlorat genom en
- * `new` vars `delete` aldrig körs — för att en tidig retur, ett undantag
- * eller en ägarskapsoklarhet kom emellan — än genom en glömd free(). Läckan
- * ska se ut som de läckor du faktiskt kommer att skriva.
+ * NEW AND NOT MALLOC, on purpose: in C++ memory is lost more often through a
+ * `new` whose `delete` never runs — because an early return, an exception or
+ * unclear ownership got in the way — than through a forgotten free(). The
+ * leak should look like the leaks you will actually write.
  */
 #include <cstdio>
 #include <new>
 
 int main() {
-    /* new[] utan delete[]. Med flit. Att det INTE är ett unique_ptr är
-     * poängen: varje läcka i modern C++ börjar med en rå ägare. */
+    /* new[] without delete[]. On purpose. That it is NOT a unique_ptr is the
+     * point: every leak in modern C++ starts with a raw owner. */
     int *p = new (std::nothrow) int[8];
     if (p == nullptr) {
         return 1;
     }
     p[0] = 1;
-    std::printf("allokerade 32 byte på %p och glömde dem\n", static_cast<void *>(p));
+    std::printf("allocated 32 bytes at %p and forgot them\n", static_cast<void *>(p));
     return 0;
 }

@@ -1,13 +1,13 @@
-# Paracore — statisk analys.
+# Paracore — static analysis.
 #
-# Vi bryr oss om samtidighet och om buggar som sanitizern bara ser om den
-# råkar köra rätt interleaving. Stilcheckarna är avstängda; .clang-format
-# äger stilen.
+# We care about concurrency and about bugs the sanitizer only sees if it
+# happens to run the right interleaving. The style checks are off;
+# .clang-format owns the style.
 #
-# C++-specifikt jämfört med C-versionen: cppcoreguidelines och modernize är
-# på, men hårt trimmade. De två som faktiskt tjänar in sig här är
-# cppcoreguidelines-avoid-non-const-global-variables (kanariefåglarna får
-# undantag) och modernize-use-nullptr.
+# C++-specific compared with the C version: cppcoreguidelines and modernize
+# are on, but heavily trimmed. The two that actually pay for themselves here
+# are cppcoreguidelines-avoid-non-const-global-variables (the canaries get an
+# exemption) and modernize-use-nullptr.
 Checks: >
   -*,
   bugprone-*,

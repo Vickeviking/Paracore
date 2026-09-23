@@ -1,52 +1,56 @@
-/* bench/bench.hpp — mätriggen. Modulen som avgör om resten är kunskap eller anekdot.
+/* bench/bench.hpp — the bench rig. The module that decides whether the rest
+ * is knowledge or anecdote.
  *
- * STATUS: STUB — du bygger den i MODUL 6. now_ns() är dock redan riktig.
+ * STATUS: STUB — you build it in MODULE 5. now_ns() is real already, though.
  *
- * ANDRA TILLÄGGET till trädstrukturen, och det bär tre milstolpar: låskurvan
- * (4), period 1-provet (6) och slutrapporten (12). Utan en gemensam rigg blir
- * varje mätning ett engångsskript och ingen kurva går att jämföra med en annan.
+ * THE SECOND ADDITION to the tree, and it carries three milestones: the lock
+ * curve (module 3), the rig itself (module 5) and the final report
+ * (module 11). Without a shared rig every measurement becomes a one-off
+ * script and no curve can be compared with another.
  *
- * Reglerna riggen ska tvinga fram, för att de är lätta att slarva bort:
+ * The rules the rig should enforce, because they are easy to skip:
  *
- *   MEDIAN OCH P99, ALDRIG MEDELVÄRDE. Ett medelvärde över en fördelning med
- *   svans (och all samtidighet har svans) beskriver ingenting som hände.
+ *   MEDIAN AND P99, NEVER THE MEAN. A mean over a distribution with a tail
+ *   (and all concurrency has a tail) describes nothing that happened.
  *
- *   UPPVÄRMNING. Första körningen mäter cachen som är kall och en frekvens som
- *   inte hunnit upp. Kasta den.
+ *   WARM-UP. The first run measures a cold cache and a clock frequency that
+ *   has not ramped up yet. Throw it away.
  *
- *   VARIATIONSKOEFFICIENT SOM STOPPVILLKOR. Kör tills stddev/median < tröskeln,
- *   och rapportera hur många varv det tog. Ett fast antal repetitioner är en
- *   gissning om hur brusig maskinen är.
+ *   COEFFICIENT OF VARIATION AS THE STOP CONDITION. Run until stddev/median <
+ *   the threshold, and report how many rounds it took. A fixed number of
+ *   repetitions is a guess about how noisy the machine is.
  *
- *   MASKINEN I VARJE CSV-HUVUD. Kärnor, frekvensguvernör, kompilator, flaggor,
- *   git-commit. En siffra utan sin maskin är ingen siffra, och om tre veckor
- *   minns du inte vilket bygge den kom ur.
+ *   THE MACHINE IN EVERY CSV HEADER. Cores, frequency governor, compiler,
+ *   flags, git commit. A number without its machine is not a number, and in
+ *   three weeks you will not remember which build it came from.
  *
- *   TRÅDFÄSTNING. Se core/thread.hpp. Kör aldrig fler trådar än kärnor när du
- *   jämför lås — då mäter du schemaläggaren.
+ *   THREAD PINNING. See core/thread.hpp. Never run more threads than cores
+ *   when comparing locks — then you measure the scheduler.
  *
- * Teorin som ska räknas UR de här siffrorna, inte ur en föreläsningsbild:
- * speedup, efficiency, Amdahl, Gustafson, strong vs weak scaling, Littles lag.
+ * The theory to be computed FROM these numbers, not from a lecture slide:
+ * speedup, efficiency, Amdahl, Gustafson, strong vs weak scaling, Little's
+ * law.
  *
- * ── Arbetsbelastningen är en mall, inte en funktionspekare ────────────────
+ * ── The workload is a template, not a function pointer ────────────────────
  *
- * C-versionen: `size_t (*para_bench_fn)(unsigned id, unsigned threads, void *arg)`.
- * Ett indirekt anrop per VARV i den innersta loopen — alltså mätte riggen
- * delvis sin egen anropskonvention. För ett spinlås vars hela kritiska sektion
- * är tre instruktioner är det inte försumbart.
+ * The C version: `size_t (*para_bench_fn)(unsigned id, unsigned threads,
+ * void *arg)`. One indirect call per ROUND in the innermost loop — so the rig
+ * partly measured its own calling convention. For a spinlock whose whole
+ * critical section is three instructions, that is not negligible.
  *
  *     bench::run(cfg, [&](unsigned id, unsigned threads) -> std::size_t {
  *         std::lock_guard g{lock};
  *         return 1;
  *     });
  *
- * Lambdan inlinas in i mätloopen. Siffran du får är låsets.
+ * The lambda is inlined into the measuring loop. The number you get is the
+ * lock's.
  *
- * OCH DÄRMED HAR DU ÄNNU EN MÄTNING GRATIS: kör samma arbetsbelastning genom
- * run() och genom en std::function-version av run(). Skillnaden är vad ett
- * indirekt anrop kostar i just din innersta loop, på just din maskin. Ta med
- * den i modul 6:s rapport — den förklarar varför C-versionens siffror inte
- * går att jämföra rakt av med C++-versionens.
+ * AND WITH THAT YOU GET ANOTHER MEASUREMENT FOR FREE: run the same workload
+ * through run() and through a std::function version of run(). The difference
+ * is what an indirect call costs in exactly your innermost loop, on exactly
+ * your machine. Include it in module 5's report — it explains why the C
+ * version's numbers cannot be compared straight off with the C++ version's.
  */
 #ifndef PARACORE_BENCH_BENCH_HPP
 #define PARACORE_BENCH_BENCH_HPP
@@ -62,16 +66,16 @@
 
 namespace para::bench {
 
-/* En monoton klocka som inte hoppar när NTP justerar systemtiden.
- * Redan riktig — testriggens watchdog och varenda framtida mätning behöver
- * den, och den är inte där kursen ligger. */
+/* A monotonic clock that does not jump when NTP adjusts the system time.
+ * Real already — the test rig's watchdog and every future measurement need
+ * it, and it is not where the course lies. */
 [[nodiscard]] std::uint64_t now_ns() noexcept;
 
-/* Arbetsbelastningen: körs av `threads` trådar samtidigt, `id` är
- * 0..threads-1, och returvärdet är antalet utförda operationer — som riggen
- * summerar. Att kravet är ett koncept betyder att en felaktig lambda fälls
- * på anropsraden med ett läsbart besked, i stället för trettio rader inifrån
- * mallen. */
+/* The workload: run by `threads` threads at once, `id` is 0..threads-1, and
+ * the return value is the number of operations performed — which the rig
+ * sums. That the requirement is a concept means a wrong lambda is rejected at
+ * the call site with a readable message, instead of thirty lines from inside
+ * the template. */
 template <class W>
 concept Workload = requires(W &w, unsigned id, unsigned threads) {
     { w(id, threads) } -> std::convertible_to<std::size_t>;
@@ -81,11 +85,11 @@ struct Config {
     std::string_view name;
     unsigned min_threads{1};
     unsigned max_threads{1};
-    unsigned warmup_rounds{1}; /* kastas */
-    unsigned min_rounds{5};    /* minst så här många mätvarv */
-    unsigned max_rounds{200};  /* ge upp på stabilitet efter så här många */
-    double target_cv{0.02};    /* stoppvillkor, t.ex. 0.02 = 2 % */
-    bool pin_threads{false};   /* true = fäst tråd i vid kärna i */
+    unsigned warmup_rounds{1}; /* thrown away */
+    unsigned min_rounds{5};    /* at least this many measured rounds */
+    unsigned max_rounds{200};  /* give up on stability after this many */
+    double target_cv{0.02};    /* stop condition, e.g. 0.02 = 2 % */
+    bool pin_threads{false};   /* true = pin thread i to core i */
 };
 
 struct Measurement {
@@ -95,15 +99,15 @@ struct Measurement {
     double p99_ns{0.0};
     double cv{0.0};
     double ops_per_sec{0.0};
-    double speedup{0.0};    /* mot resultatet vid 1 tråd */
-    double efficiency{0.0}; /* speedup / trådar */
+    double speedup{0.0};    /* against the result at 1 thread */
+    double efficiency{0.0}; /* speedup / threads */
 };
 
-/* Skriv maskinens tillstånd som CSV-kommentarer (# ...) i huvudet. */
+/* Write the machine's state as CSV comments (# ...) in the header. */
 [[nodiscard]] Status write_header(std::ostream &out, const Config &cfg);
 
-/* Kör hela svepet min_threads..max_threads och skriv en CSV-rad per
- * trådantal. `csv` får vara nullptr om du bara vill ha vektorn tillbaka. */
+/* Run the whole sweep min_threads..max_threads and write one CSV row per
+ * thread count. `csv` may be nullptr if you only want the vector back. */
 template <Workload W>
 [[nodiscard]] Result<std::vector<Measurement>> run(const Config &cfg, W &&work,
                                                    std::ostream *csv = nullptr) {

@@ -10,24 +10,24 @@ namespace para {
 
 namespace {
 
-/* Ett fel från pthread_mutex_lock i ett ERRORCHECK-bygge betyder att
- * programmet är trasigt på ett sätt ingen returkod hade räddat: rekursivt
- * lås, eller unlock från en tråd som inte håller låset. Att returnera en
- * status hade bara flyttat kraschen. Abort med besked, och låt testriggen
- * rapportera SIGNAL med testets namn. */
+/* An error from pthread_mutex_lock in an ERRORCHECK build means the program
+ * is broken in a way no return code would have saved: a recursive lock, or
+ * unlock from a thread that does not hold the lock. Returning a status would
+ * only have moved the crash. Abort with a message, and let the test rig
+ * report SIGNAL with the test's name. */
 [[noreturn]] void mutex_fatal(const char *op, int rc) noexcept {
-    const char *why = "okänt fel";
+    const char *why = "unknown error";
     if (rc == EDEADLK) {
-        why = "rekursivt lås — tråden håller redan det här låset";
+        why = "recursive lock — the thread already holds this lock";
     } else if (rc == EPERM) {
-        why = "unlock från en tråd som inte håller låset";
+        why = "unlock from a thread that does not hold the lock";
     } else if (rc == EINVAL) {
-        why = "ogiltigt lås (destruerat? aldrig initierat?)";
+        why = "invalid lock (destroyed? never initialised?)";
     }
     std::fprintf(stderr,
-                 "\nparacore: Mutex::%s misslyckades (%d): %s\n"
-                 "          Debugbygget kör med PTHREAD_MUTEX_ERRORCHECK just för att\n"
-                 "          fånga det här i stället för att låta det bli en deadlock.\n\n",
+                 "\nparacore: Mutex::%s failed (%d): %s\n"
+                 "          The debug build runs with PTHREAD_MUTEX_ERRORCHECK precisely to\n"
+                 "          catch this instead of letting it become a deadlock.\n\n",
                  op, rc, why);
     std::abort();
 }
@@ -38,12 +38,13 @@ Mutex::Mutex() noexcept {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
 #if defined(PARA_MUTEX_CHECKED)
-    /* Debugbygget: fånga rekursivt lås och unlock-från-fel-tråd som ett FEL,
-     * i stället för att låta dem bli en deadlock du felsöker på natten.
+    /* The debug build: catch a recursive lock and unlock-from-the-wrong-thread
+     * as an ERROR, instead of letting them become a deadlock you debug at
+     * night.
      *
-     * std::mutex har ingen motsvarighet — att låsa den rekursivt är
-     * odefinierat beteende och i praktiken en hängning. Det är ena halvan av
-     * varför Paracore har en egen. */
+     * std::mutex has no equivalent — locking it recursively is undefined
+     * behaviour and in practice a hang. That is one half of why Paracore has
+     * its own. */
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
 #endif
     const int rc = pthread_mutex_init(&m_, &attr);
@@ -85,11 +86,12 @@ void Mutex::unlock() noexcept {
 CondVar::CondVar() noexcept {
     pthread_condattr_t attr;
     pthread_condattr_init(&attr);
-    /* MONOTONIC, inte REALTIME: en NTP-justering mitt i en timeout får inte
-     * förlänga eller förkorta väntan. Samma skäl som bench::now_ns().
+    /* MONOTONIC, not REALTIME: an NTP adjustment in the middle of a timeout
+     * must not lengthen or shorten the wait. Same reason as bench::now_ns().
      *
-     * std::condition_variable::wait_until mäter mot system_clock och har
-     * precis det problemet. Det är andra halvan av varför Paracore har egna. */
+     * std::condition_variable::wait_until measures against system_clock and
+     * has exactly that problem. That is the other half of why Paracore has its
+     * own. */
     pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
     const int rc = pthread_cond_init(&c_, &attr);
     pthread_condattr_destroy(&attr);

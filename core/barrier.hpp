@@ -1,27 +1,31 @@
-/* core/barrier.hpp — n trådar möts, ingen går vidare förrän alla kommit.
+/* core/barrier.hpp — n threads meet, nobody moves on until everyone arrived.
  *
- * STATUS: STUB — du bygger dem i MODUL 11.
+ * STATUS: STUB — you build them in MODULE 10.
  *
- * Den naiva versionen (räkna upp, vänta på att räknaren når n) går sönder på
- * ANDRA varvet: de snabba trådarna hinner in i nästa barriär innan de långsamma
- * lämnat den förra, och räknaren är redan nollställd under dem. Lösningen heter
- * sense reversing — varje tråd bär en lokal fas-bit som den vänder, och
- * barriären släpper på fas, inte på räknarvärde.
+ * The naive version (count up, wait for the counter to reach n) breaks on the
+ * SECOND round: the fast threads get into the next barrier before the slow
+ * ones have left the previous one, and the counter has already been reset
+ * under them. The solution is called sense reversing — every thread carries a
+ * local phase bit that it flips, and the barrier releases on phase, not on the
+ * counter value.
  *
- * Tre implementationer ska mätas mot varandra vid 2, 4, 8 och 16 trådar:
- *   SenseBarrier       en delad räknare. Enkel, och O(n) cachetrafik.
- *   TournamentBarrier  parvisa möten i en turnering, O(log n) djup.
- *   TreeBarrier        statiskt träd, bäst när n är känt i förväg.
+ * Three implementations to be measured against each other at 2, 4, 8 and 16
+ * threads:
+ *   SenseBarrier       one shared counter. Simple, and O(n) cache traffic.
+ *   TournamentBarrier  pairwise meetings in a tournament, O(log n) depth.
+ *   TreeBarrier        a static tree, best when n is known up front.
  *
- * ── Och en fjärde referens du inte skriver ────────────────────────────────
+ * ── And a fourth reference you do not write ───────────────────────────────
  *
- * std::barrier finns sedan C++20 och är den fjärde kurvan i diagrammet. Mät
- * mot den. Den har en egenskap dina tre inte har: en COMPLETION FUNCTION som
- * körs av exakt en tråd i fasövergången, vilket är samma behov som `is_leader`
- * nedan svarar på — fast utan att någon kan glömma att kolla flaggan.
+ * std::barrier has existed since C++20 and is the fourth curve in the chart.
+ * Measure against it. It has a property your three do not: a COMPLETION
+ * FUNCTION that runs on exactly one thread in the phase transition, which is
+ * the same need `is_leader` below answers — except nobody can forget to check
+ * the flag.
  *
- * Om din TreeBarrier inte slår std::barrier vid 16 trådar: läs libstdc++:s
- * implementation innan du förklarar bort det. Den är värd att läsa ändå.
+ * If your TreeBarrier does not beat std::barrier at 16 threads: read
+ * libstdc++'s implementation before you explain it away. It is worth reading
+ * anyway.
  */
 #ifndef PARACORE_CORE_BARRIER_HPP
 #define PARACORE_CORE_BARRIER_HPP
@@ -30,14 +34,15 @@
 
 namespace para {
 
-/* Exakt EN väntande tråd får tillbaka Arrival::Leader — bekvämt för
- * "en tråd nollställer räknarna mellan varven". */
+/* Exactly ONE waiting thread gets Arrival::Leader back — handy for "one
+ * thread resets the counters between rounds". */
 enum class Arrival { Follower = 0, Leader = 1 };
 
 namespace detail {
-/* Gemensamt för de tre: allt utom hur trådarna möts. Modul 11 bestämmer
- * själv om det blir ett arv, en policy-mall eller tre fristående klasser —
- * och den mätningen (virtuellt anrop mot mall) är en del av modulen. */
+/* Common to all three: everything except how the threads meet. Module 10
+ * decides for itself whether that becomes inheritance, a policy template or
+ * three standalone classes — and that measurement (virtual call vs template)
+ * is part of the module. */
 } // namespace detail
 
 class SenseBarrier {

@@ -7,7 +7,8 @@ perf.data*
 callgrind.out.*
 .cache/
 
-# Lekplatsens skräplåda: allt utom .gitkeep. Filerna byggs av `make` precis
-# som resten av playground/, men de committas aldrig — det är hela skillnaden.
+# The playground's scratch box: everything except .gitkeep. The files are
+# built by `make` just like the rest of playground/, but they are never
+# committed — that is the whole difference.
 playground/scratch/*
 !playground/scratch/.gitkeep

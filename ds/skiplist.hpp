@@ -1,31 +1,33 @@
-/* ds/skiplist.hpp — ordnad mängd och prioritetskö.
+/* ds/skiplist.hpp — ordered set and priority queue.
  *
- * STATUS: STUB — du bygger dem i MODUL 11 (AMP kapitel 14–15).
+ * STATUS: STUB — you build them in MODULE 10 (AMP chapters 14–15).
  *
- * Skiplistan är den ordnade strukturen som slipper omstrukturering: balansen
- * är PROBABILISTISK, så en insättning rör bara sina egna länkar och aldrig
- * hela trädet. Det är därför den och inte ett rödsvart träd är den samtidiga
- * ordnade strukturen.
+ * The skip list is the ordered structure that avoids restructuring: the
+ * balance is PROBABILISTIC, so an insertion touches only its own links and
+ * never the whole tree. That is why it, and not a red-black tree, is the
+ * concurrent ordered structure.
  *
- * Byggd på det du redan har: markerade pekare från modul 7, hazard pointers
- * från modul 9. Borttagning markerar uppifrån och ned, länkar ut nedifrån och
- * upp — ordningen är inte godtycklig, tänk igenom varför.
+ * Built on what you already have: marked pointers from module 6, hazard
+ * pointers from module 8. Removal marks top-down and unlinks bottom-up — the
+ * order is not arbitrary, think through why.
  *
- * Prioritetskön ovanpå: en samtidig prioritetskö är nästan aldrig STRIKT
- * (två trådar kan få ut element i "fel" ordning utan att någon invariant
- * bryts). Den är quiescently consistent, och det räcker gott för modul 12:s
- * schemaläggare. Att kräva strikthet kostar en flaskhals du inte vill ha.
+ * The priority queue on top: a concurrent priority queue is almost never
+ * STRICT (two threads may get elements out in the "wrong" order without any
+ * invariant being broken). It is quiescently consistent, and that is plenty
+ * for module 11's scheduler. Demanding strictness costs a bottleneck you do
+ * not want.
  *
- * ── Nivågeneratorn är en mallparameter, och det är inte pedanteri ─────────
+ * ── The level generator is a template parameter, and that is not pedantry ─
  *
- * Nivån för en ny nod dras slumpmässigt. Med std::mt19937 i en thread_local
- * blir varje körning olik, vilket är rätt i produktion och FEL i ett test:
- * en bugg som bara visar sig när noden får nivå 7 hittas aldrig två gånger.
- * Därför tar klassen sin generator som parameter — testet ger den en riggad
- * sekvens och kan reproducera exakt den formen på listan varje gång.
+ * The level of a new node is drawn at random. With std::mt19937 in a
+ * thread_local every run is different, which is right in production and
+ * WRONG in a test: a bug that only shows when the node gets level 7 is never
+ * found twice. That is why the class takes its generator as a parameter — the
+ * test gives it a rigged sequence and can reproduce exactly that shape of the
+ * list every time.
  *
- * Det är samma princip som kanariefåglarna: ett test som inte kan upprepas
- * har inte bevisat något.
+ * It is the same principle as the canaries: a test that cannot be repeated
+ * has not proven anything.
  */
 #ifndef PARACORE_DS_SKIPLIST_HPP
 #define PARACORE_DS_SKIPLIST_HPP
@@ -40,7 +42,7 @@
 
 namespace para {
 
-/* Standardgeneratorn: geometrisk fördelning, p = 1/2, en per tråd. */
+/* The default generator: geometric distribution, p = 1/2, one per thread. */
 class RandomLevel {
 public:
     static constexpr unsigned kMaxLevel = 32;
@@ -89,9 +91,9 @@ private:
     [[no_unique_address]] Level level_{};
 };
 
-/* Prioritetskö: minsta nyckeln ut. Byggd PÅ skiplistan, inte bredvid den —
- * om den inte går att bygga på LockFreeSkipList är det listans gränssnitt
- * som är fel. */
+/* Priority queue: smallest key out. Built ON the skip list, not next to it —
+ * if it cannot be built on LockFreeSkipList, it is the list's interface that
+ * is wrong. */
 template <class P, class V, class Compare = std::less<P>> class PriorityQueue {
 public:
     static constexpr Module kModule = Module::SkipLists;

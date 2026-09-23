@@ -1,12 +1,12 @@
-/* KANARIEFÅGEL 3 — en riktig, garanterad deadlock.
+/* CANARY 3 — a real, guaranteed deadlock.
  *
- * Tråd 2 väntar på ett lås som tråd 1 aldrig släpper. Ingen slump, ingen
- * "kör igen så kanske": den här hänger alltid.
+ * Thread 2 waits for a lock that thread 1 never releases. No randomness, no
+ * "run it again and maybe": this one always hangs.
  *
- * Den finns för att bevisa den ANDRA halvan av deadlockskyddet:
- * `make canary-watchdog` (och testriggens watchdog i tests/para_test.cpp) ska
- * DÖDA den och rapportera TIMEOUT. En testsvit som hänger i CI i stället för
- * att säga vilket test som hängde är värdelös precis när du behöver den.
+ * It exists to prove the SECOND half of the deadlock protection:
+ * `make canary-watchdog` (and the test rig's watchdog in tests/para_test.cpp)
+ * must KILL it and report TIMEOUT. A test suite that hangs in CI instead of
+ * saying which test hung is worthless exactly when you need it.
  */
 #include <core/mutex.hpp>
 #include <core/thread.hpp>
@@ -18,13 +18,13 @@ para::Mutex L;
 } // namespace
 
 int main() {
-    L.lock(); /* och släpps aldrig */
+    L.lock(); /* and never released */
     {
         para::Thread t{[] {
-            L.lock(); /* aldrig ledigt */
+            L.lock(); /* never free */
             L.unlock();
         }};
-    } /* jthread joinar här, och kommer aldrig vidare */
-    std::printf("den här raden ska aldrig nås\n");
+    } /* jthread joins here, and never gets further */
+    std::printf("this line must never be reached\n");
     return 0;
 }

@@ -1,352 +1,363 @@
 # Paracore
 
-Ett eget bibliotek för samtidighet och parallella datastrukturer, i **C++23**.
+A library of my own for concurrency and parallel data structures, in **C++23**.
 
-Byggs från grunden under HT26, i den ordning Herlihy & Shavit motiverar den i
-*The Art of Multiprocessor Programming* — period 1 lägger grunden i takt med
-**1DL530 Introduktion till parallellprogrammering**, period 2 bygger
-datastrukturerna i takt med **1DL590 Parallella algoritmer och datastrukturer**.
+Built from scratch during autumn term 2026, in the order Herlihy & Shavit
+motivate it in *The Art of Multiprocessor Programming* — period 1 lays the
+foundation alongside **1DL530 Introduction to Parallel Programming**, period 2
+builds the data structures alongside **1DL590 Parallel Algorithms and Data
+Structures**.
 
-**Nästan allt här är stubbar.** Det är hela poängen. Repot är kursplanen:
-varje huvudfil säger vilken modul som fyller den, byggplanen bor i
-`src/core/modules.cpp`, och `tests/test_notbuilt.cpp` läser den tabellen. När
-du bygger en modul vänder du dess rad till `true` — då faller dess test, och
-det är signalen att komma tillbaka och skriva riktiga tester i stället.
+**Almost everything here is stubs.** That is the whole point. The repo is the
+curriculum: every header says which module fills it, the build plan lives in
+`src/core/modules.cpp`, and `tests/test_notbuilt.cpp` reads that table. When you
+build a module you flip its row to `true` — then its test fails, and that is
+the signal to come back and write real tests instead.
 
 ```
-make progress     # var i byggplanen är jag?
+make progress     # where in the build plan am I?
 ```
 
 ---
 
-## Kom igång
+## Getting started
 
 ```bash
 git clone git@github.com:Vickeviking/Paracore.git
 cd Paracore
 
-make canary       # FÖRST: bevisa att verktygen faktiskt hittar buggar
-make lockfree     # och: vad klarar den här kompilatorn?
-make test         # sedan: testsviten
-make run          # och: playground/hello.cpp
+make canary       # FIRST: prove that the tools actually find bugs
+make lockfree     # and: what can this compiler do?
+make test         # then: the test suite
+make run          # and: playground/hello.cpp
 ```
 
-`make help` listar allt.
+`make help` lists everything.
 
-**Kräver C++23-bibliotek** — g++ ≥ 13 eller clang++ ≥ 17. Inte för syntaxens
-skull, utan för `std::expected`, som är felmodellen (se `core/status.hpp`).
-`./scripts/setup-new-machine.sh` kontrollerar det och säger till.
+**Requires a C++23 library** — g++ ≥ 13 or clang++ ≥ 17. Not for the syntax,
+but for `std::expected`, which is the error model (see `core/status.hpp`).
+`./scripts/setup-new-machine.sh` checks it and tells you.
 
-### Kör `make canary` först. Varje gång du sätter upp en ny maskin.
+### Run `make canary` first. Every time you set up a new machine.
 
-Fem program i `tests/canary_*.cpp` är **trasiga med flit** och ska aldrig fixas.
-Målet kräver att verktygen fäller dem:
+Five programs in `tests/canary_*.cpp` are **broken on purpose** and must never
+be fixed. The target requires the tools to catch them:
 
-| # | Programmet | Verktyget som måste fälla det |
+| # | The program | The tool that must catch it |
 |---|---|---|
-| 1 | osynkroniserad räknare | ThreadSanitizer säger *data race* |
-| 2 | ABBA-låsordning som **aldrig hänger** | helgrind säger *lock order violated* |
-| 3 | garanterad deadlock | watchdogen dödar den efter 5 s |
-| 4 | 32 läckta byte | LeakSanitizer hittar dem |
-| 5 | undantag lämnar låset taget | watchdogen dödar den efter 5 s |
+| 1 | unsynchronised counter | ThreadSanitizer says *data race* |
+| 2 | ABBA lock order that **never hangs** | helgrind says *lock order violated* |
+| 3 | guaranteed deadlock | the watchdog kills it after 5 s |
+| 4 | 32 leaked bytes | LeakSanitizer finds them |
+| 5 | exception leaves the lock held | the watchdog kills it after 5 s |
 
-**Nummer 2 är den viktigaste.** Programmet kör igenom på nolltid varje gång, på
-varje maskin, och är ändå trasigt: om de två trådarna någonsin kördes samtidigt
-skulle de deadlocka. Så ser verkliga låsordningsbuggar ut — latenta i månader,
-gröna i CI, och sedan hänger produktionen en tisdag.
+**Number 2 is the most important.** The program runs through in no time every
+time, on every machine, and is broken anyway: if the two threads ever ran at
+the same time they would deadlock. That is what real lock-order bugs look
+like — latent for months, green in CI, and then production hangs one Tuesday.
 
-> Ett test kan bara visa att buggen inte inträffade den här gången.
-> Helgrind visar att den **kan** inträffa.
+> A test can only show that the bug did not happen this time.
+> Helgrind shows that it **can** happen.
 
-**Nummer 5 är ny i C++-versionen** och kunde inte finnas i C: den tar ett lås
-för hand, kastar ett undantag, och når aldrig sin `unlock()`. Den delar verktyg
-med nummer 3, vilket bryter mot mönstret "ett program, ett verktyg" — den finns
-ändå, för att den bevisar att en hel buggklass blev *möjlig* i och med
-språkbytet. Varje gång du skriver `m.lock()` i stället för
-`std::lock_guard g{m}` har du skrivit det programmet.
+**Number 5 is new in the C++ version** and could not exist in C: it takes a
+lock by hand, throws an exception, and never reaches its `unlock()`. It shares
+a tool with number 3, which breaks the "one program, one tool" pattern — it
+exists anyway, because it proves that a whole class of bugs became *possible*
+with the language change. Every time you write `m.lock()` instead of
+`std::lock_guard g{m}` you have written that program.
 
-Går någon av de fem igenom har verktygskedjan slutat fungera — fel flaggor, fel
-länkordning, en `-fno-sanitize` som smugit in — och varje grönt resultat du
-fått sedan dess är värdelöst.
+If any of the five passes, the tool chain has stopped working — wrong flags,
+wrong link order, a `-fno-sanitize` that sneaked in — and every green result
+you have had since is worthless.
 
-### Och `make lockfree`, som inte är en kanariefågel
+### And `make lockfree`, which is not a canary
 
-Ett **probe**, samma familj som TSan-probet: frågan är inte om ett verktyg
-fungerar utan vad den här maskinen och den här kompilatorn faktiskt klarar.
+A **probe**, the same family as the TSan probe: the question is not whether a
+tool works but what this machine and this compiler actually support.
 
 ```
 $ make lockfree                 # g++ 16.2, x86-64
-atomic<TaggedPtr> : LÅST (libatomic)
+atomic<TaggedPtr> : LOCKED (libatomic)
 
-$ make CXX=clang++ lockfree     # clang++ 22.1, SAMMA maskin, SAMMA -mcx16
+$ make CXX=clang++ lockfree     # clang++ 22.1, SAME machine, SAME -mcx16
 atomic<TaggedPtr> : lock-free
 ```
 
-Samma maskin, samma flaggor, olika svar. GCC vägrar kalla `cmpxchg16b`
-lock-free (en atomär *läsning* av 16 byte måste kunna ske på skrivskyddat
-minne, och instruktionen skriver alltid); clang gör en annan avvägning. Modul
-9:s taggade pekare står och faller med svaret, och en "lock-free" stack vars
-CAS i själva verket är ett bibliotekslås är inte lock-free — den är en låst
-stack med sämre kod, och ingenting i programmet säger ifrån.
+Same machine, same flags, different answers. GCC refuses to call `cmpxchg16b`
+lock-free (an atomic *load* of 16 bytes must be possible on read-only memory,
+and the instruction always writes); clang makes a different trade-off. Module
+8's tagged pointers stand or fall with the answer, and a "lock-free" stack
+whose CAS is really a library lock is not lock-free — it is a locked stack with
+worse code, and nothing in the program objects.
 
-På Pi:n säger g++ 14.2 också nej, och där hjälper **ingen** flagga: `-mcpu=native`,
-`-march=armv8.2-a+lse` och `-mcpu=cortex-a76+lse` ger alla samma svar, trots att
-CPU:n har `atomics` (alltså LSE och CASP) i `/proc/cpuinfo`. Mätt 13 sep 2026.
-Att prova flaggorna är rätt reflex; att skriva ned att de inte hjälpte är det
-som gör att du slipper prova igen om tre månader.
+On the Pi g++ 14.2 says no as well, and there **no** flag helps: `-mcpu=native`,
+`-march=armv8.2-a+lse` and `-mcpu=cortex-a76+lse` all give the same answer,
+even though the CPU has `atomics` (i.e. LSE and CASP) in `/proc/cpuinfo`.
+Measured 13 Sep 2026. Trying the flags is the right reflex; writing down that
+they did not help is what spares you trying again in three months.
 
 ---
 
-## Make-mål
+## Make targets
 
-**Bygga**
-
-| | |
-|---|---|
-| `make` | bibliotek + tester + playground |
-| `make run` | kör `playground/hello.cpp` |
-| `make run PROG=counter ARGS=8` | kör en annan fil, med argument |
-| `make run PROG=falsesharing ARGS=8` | falsk delning, mätt med `std::atomic_ref` |
-
-**Testa** — varje test körs i en egen process med en watchdog, så en deadlock
-blir `TIMEOUT` med testets namn i stället för en hängd svit.
+**Build**
 
 | | |
 |---|---|
-| `make test` | testsviten |
-| `make tsan` | + ThreadSanitizer (kapplöpningar **och** låsordning) |
-| `make asan` | + AddressSanitizer och UBSan (läckor, use-after-free, UB) |
+| `make` | library + tests + playground |
+| `make run` | run `playground/hello.cpp` |
+| `make run PROG=counter ARGS=8` | run another file, with arguments |
+| `make run PROG=falsesharing ARGS=8` | false sharing, measured with `std::atomic_ref` |
+
+**Test** — every test runs in its own process with a watchdog, so a deadlock
+becomes `TIMEOUT` with the test's name instead of a hung suite.
+
+| | |
+|---|---|
+| `make test` | the test suite |
+| `make tsan` | + ThreadSanitizer (races **and** lock order) |
+| `make asan` | + AddressSanitizer and UBSan (leaks, use-after-free, UB) |
 | `make valgrind` | + memcheck |
 | `make helgrind` | + helgrind |
 | `make drd` | + DRD |
-| `make stress` | race-märkta tester × 200 under TSan |
-| `make test ARGS=mutex` | bara tester vars namn innehåller `mutex` |
+| `make stress` | race-tagged tests × 200 under TSan |
+| `make test ARGS=mutex` | only tests whose name contains `mutex` |
 
-**Grinden**
+**The gate**
 
 ```bash
 make check        # fmt + test + tsan + asan + canary + lockfree
 ```
 
-**Övrigt:** `make progress` · `make fmt` · `make tidy` · `make compile_commands`
-(för clangd) · `make bench` · `make arm` · `make clean`
+**Other:** `make progress` · `make fmt` · `make tidy` · `make compile_commands`
+(for clangd) · `make bench` · `make arm` · `make clean`
 
-`MODE=debug|release|tsan|asan` styr `build/<MODE>/`. Debugbygget sätter
-`PTHREAD_MUTEX_ERRORCHECK`, så rekursivt lås och unlock-från-fel-tråd blir ett
-fel direkt i stället för en deadlock klockan två på natten.
+`MODE=debug|release|tsan|asan` controls `build/<MODE>/`. The debug build sets
+`PTHREAD_MUTEX_ERRORCHECK`, so a recursive lock and unlock-from-the-wrong-thread
+become an error right away instead of a deadlock at two in the morning.
 
-TSan-bygget är **`-O2`, inte `-O0`** — ett osäkert bygge kör ett annat program
-än det du skeppar och gömmer just de omordningar du är ute efter.
+The TSan build is **`-O2`, not `-O0`** — an unoptimised build runs a different
+program from the one you ship and hides exactly the reorderings you are after.
 
 ---
 
-## Trädet
+## The tree
 
 ```
 Paracore/
 ├── core/     status.hpp thread.hpp mutex.hpp barrier.hpp task.hpp
-├── sync/     atomic.hpp lockable.hpp mutual_exclusion.hpp spinlock.hpp
-│          rwlock.hpp semaphore.hpp
+├── sync/     atomic.hpp lockable.hpp mutual_exclusion.hpp peterson_lock.hpp
+│             spinlock.hpp rwlock.hpp semaphore.hpp
 ├── exec/     pool.hpp scheduler.hpp
 ├── ds/       set.hpp stack.hpp queue.hpp hashmap.hpp skiplist.hpp
-│   └── detail/   implementationerna av mallarna ovan
-├── mem/      reclaim.hpp          ← utan den läcker eller kraschar ds/
+│   └── detail/   the implementations of the templates above
+├── mem/      reclaim.hpp          ← without it ds/ leaks or crashes
 │   └── detail/
-├── bench/    bench.hpp            ← mätriggen, bär tre milstolpar
-├── include/  paracore.hpp         ← #include <paracore.hpp> ger allt
-├── src/      de icke-mallade implementationerna
-│   └── core/modules.cpp           ← BYGGPLANEN. Ett ställe.
-├── tests/    para_test.hpp + testsviten + de fem kanariefåglarna + probet
-└── playground/  dina egna småprogram, ett per .cpp-fil
+├── bench/    bench.hpp            ← the bench rig, carries three milestones
+├── include/  paracore.hpp         ← #include <paracore.hpp> gives you everything
+├── src/      the non-template implementations — the ONLY .cpp files the library builds
+│   ├── core/modules.cpp           ← THE BUILD PLAN. One place.
+│   └── sync/peterson_lock.cpp     ← e.g. sync/peterson_lock.hpp's implementation
+├── tests/    para_test.hpp + the test suite + the five canaries + the probe
+└── playground/  your own small programs, one per .cpp file
 ```
 
-Beroenderiktningen pekar bara nedåt: `ds/` får använda `mem/` och `sync/`,
-aldrig tvärtom.
+**Where a new file goes.** A header goes in its directory (`sync/foo.hpp`); its
+`.cpp` goes under `src/` with the same path (`src/sync/foo.cpp`). The Makefile
+compiles `src/**/*.cpp` into `libparacore.a` and nothing else — a `.cpp` next
+to its header is silently never built. A new test is any `tests/test_*.cpp`
+using `PARA_TEST(name)`; it is picked up by `make test` automatically.
 
-**Publikt mot privat**, och regeln överlevde språkbytet även om mekaniken inte
-gjorde det: `core/mutex.hpp` är kontraktet, `src/core/internal.hpp` är det
-inte. För mallarna går gränsen mellan `ds/queue.hpp` (kontraktet) och
-`ds/detail/queue_impl.hpp` (hur det är gjort) — en mall måste nå varje
-översättningsenhet som använder den och kan inte gömmas i en `.cpp`. Det är
-mallarnas enda verkliga pris, och det betalas i byggtid.
+The dependency direction only points downwards: `ds/` may use `mem/` and
+`sync/`, never the other way round.
 
----
-
-## Varför C++ och inte C
-
-Repot började i C och skrevs om i september 2026. Skälen, i ordning:
-
-1. **Alla kursens labbar är i C++.** Två dialekter i huvudet samma vecka kostar
-   något och ger inget.
-2. **Minnesmodellen är densamma.** C++11:s och C11:s är samma modell — Boehms
-   *Threads Cannot Be Implemented as a Library* skrevs om båda, fixen
-   standardiserades i C++11 först, och C11 tog över den. Varje litmustest
-   gäller ordagrant i båda. Modul 2 blev inte en rad annorlunda.
-3. **`void*` försvann.** C-versionens `para_queue_push(q, void *value)` blev
-   `Queue<T>::try_push(T)`. Boken är i Java och dess generics översätts närmare
-   till en mall än till en pekare som tappar sin typ på vägen.
-4. **RAII.** `std::lock_guard`, och kanariefågel 5 som visar vad som händer
-   utan den.
-5. **`std::atomic_ref`** gjorde falsk delning-mätningen i
-   `playground/falsesharing.cpp` möjlig. Den gick inte att skriva i C: där
-   hade hela arrayen behövt vara `_Atomic`, vilket ändrar det man mäter.
-6. **`is_always_lock_free`** gjorde `make lockfree` möjlig.
-
-Och en sak som blev *sämre* och som är värd att veta: TSan- och
-helgrind-rapporter om mallad kod bär manglade namn och är stökigare att läsa.
-`c++filt` hjälper.
-
-Det fulla resonemanget, inklusive det som valdes bort, ligger i
-[`docs/beslut/0001-cpp-istallet-for-c.md`](docs/beslut/0001-cpp-istallet-for-c.md).
+**Public versus private**, and the rule survived the language change even if
+the mechanics did not: `core/mutex.hpp` is the contract, `src/core/internal.hpp`
+is not. For the templates the boundary runs between `ds/queue.hpp` (the
+contract) and `ds/detail/queue_impl.hpp` (how it is done) — a template has to
+reach every translation unit that uses it and cannot be hidden in a `.cpp`.
+That is templates' only real price, and it is paid in build time.
 
 ---
 
-## Modulerna
+## Why C++ and not C
 
-Elva moduler, 20 veckor. **Den gamla modul 1 — repot, grinden och
-kanariefåglarna — är borttagen:** den är byggd, den står i den här filen, och
-Viktor 13/9 ville *"börja med implementationer o sådant direkt"*.
+The repo started in C and was rewritten in September 2026. The reasons, in
+order:
 
-**Numret i tabellen är SPÅRETS.** Numret i en huvudfil ("MODUL 8 fyller den
-här filen") är REPOTS, och de skiljer sig med ett steg från och med modul 2 —
-repot räknar fortfarande sitt eget byggda modul 1. Hela resonemanget står i
-`src/core/modules.cpp`.
+1. **All the course labs are in C++.** Two dialects in your head in the same
+   week costs something and gives nothing.
+2. **The memory model is the same.** C++11's and C11's are the same model —
+   Boehm's *Threads Cannot Be Implemented as a Library* was written about both,
+   the fix was standardised in C++11 first, and C11 adopted it. Every litmus
+   test holds word for word in both. Module 1 did not change by a line.
+3. **`void*` disappeared.** The C version's `para_queue_push(q, void *value)`
+   became `Queue<T>::try_push(T)`. The book is in Java and its generics
+   translate more closely to a template than to a pointer that loses its type
+   on the way.
+4. **RAII.** `std::lock_guard`, and canary 5 showing what happens without it.
+5. **`std::atomic_ref`** made the false-sharing measurement in
+   `playground/falsesharing.cpp` possible. It could not be written in C: there
+   the whole array would have had to be `_Atomic`, which changes what you
+   measure.
+6. **`is_always_lock_free`** made `make lockfree` possible.
 
-Varje modul namnger sina **konkreta leveranser**, för det är dem
-lektionsgeneratorn räknar när den fördelar labbar — en labb per leverans.
-Fulla beskrivningar: [`docs/arcturon-sparstruktur.md`](docs/arcturon-sparstruktur.md).
+And one thing that got *worse* and is worth knowing: TSan and helgrind reports
+about template code carry mangled names and are messier to read. `c++filt`
+helps.
 
-**Period 1 — grunden** *(31 aug – 1 nov, med 1DL530)*
+The full reasoning, including what was rejected, is in
+[`docs/decisions/0001-cpp-instead-of-c.md`](docs/decisions/0001-cpp-instead-of-c.md).
 
-| # | v | Modul | Fyller |
+---
+
+## The modules
+
+Eleven modules, 20 weeks. **The numbers are the Arcturon track's, everywhere**
+— in this table, in every header ("MODULE 7 fills this file"), in
+`src/core/modules.cpp` and in the test names of `tests/test_notbuilt.cpp`. The
+repo itself — the Makefile, the gate and the canaries — is row 0 in the build
+plan: a built prerequisite, not a track module (on 13 Sep Viktor wanted to
+*"start with implementations and such directly"*).
+
+Every module names its **concrete deliverables**, because those are what the
+lesson generator counts when it distributes labs — one lab per deliverable.
+Full descriptions: [`docs/arcturon-track-structure.md`](docs/arcturon-track-structure.md).
+
+**Period 1 — the foundation** *(31 Aug – 1 Nov, with 1DL530)*
+
+| # | wk | Module | Fills | Status |
+|---|---|---|---|---|
+| 1 | 2 | The memory model, measured and not believed | `sync/atomic.hpp`, the litmus rig, `make lockfree` | **done** |
+| 2 | 1 | Mutual exclusion, built from atomics | `sync/mutual_exclusion.hpp`, `sync/peterson_lock.hpp` | in progress |
+| 3 | 2 | Spinlocks, contention and the cache | `sync/spinlock.hpp` — six locks + `AnyLock` | |
+| 4 | 2 | Monitors, fairness and the thread pool | `sync/rwlock.hpp`, `sync/semaphore.hpp`, `core/task.hpp`, `exec/pool.hpp` | |
+| 5 | 1 | The bench rig | `bench/bench.hpp` | |
+
+**Period 2 — the data structures** *(2 Nov – 17 Jan, with 1DL590)*
+
+| # | wk | Module | Fills |
 |---|---|---|---|
-| 1 | 2 | Minnesmodellen, mätt och inte trodd | `sync/atomic.hpp`, litmusriggen, `make lockfree` |
-| 2 | 1 | Ömsesidig uteslutning, byggd ur atomics | `sync/mutual_exclusion.hpp` |
-| 3 | 2 | Spinlås, kontention och cachen | `sync/spinlock.hpp` — sex lås + `AnyLock` |
-| 4 | 2 | Monitorer, rättvisa och trådpoolen | `sync/rwlock.hpp`, `sync/semaphore.hpp`, `core/task.hpp`, `exec/pool.hpp` |
-| 5 | 1 | Mätriggen | `bench/bench.hpp` |
+| 6 | 2 | Sets: five synchronisation strategies | `ds/set.hpp` |
+| 7 | 2 | Queues, stacks and elimination | `ds/queue.hpp`, `ds/stack.hpp` |
+| 8 | 2 | Memory reclamation: ABA, hazard pointers, epochs | `mem/reclaim.hpp` |
+| 9 | 2 | Hash tables: from one lock to split-ordering | `ds/hashmap.hpp` |
+| 10 | 2 | Skip lists, priority queues and barriers | `ds/skiplist.hpp`, `core/barrier.hpp` |
+| 11 | 2 | The final exam: a work-stealing scheduler | `exec/scheduler.hpp` |
 
-**Period 2 — datastrukturerna** *(2 nov – 17 jan, med 1DL590)*
+The lessons and labs are generated in Arcturon, in the Paracore study track;
+the steering lives in
+[`docs/arcturon-track-generator-brief.md`](docs/arcturon-track-generator-brief.md).
 
-| # | v | Modul | Fyller |
-|---|---|---|---|
-| 6 | 2 | Mängder: fem synkroniseringsstrategier | `ds/set.hpp` |
-| 7 | 2 | Köer, stackar och elimination | `ds/queue.hpp`, `ds/stack.hpp` |
-| 8 | 2 | Minnesåtervinning: ABA, hazard pointers, epoker | `mem/reclaim.hpp` |
-| 9 | 2 | Hashtabeller: från ett lås till split-ordering | `ds/hashmap.hpp` |
-| 10 | 2 | Skiplistor, prioritetsköer och barriärer | `ds/skiplist.hpp`, `core/barrier.hpp` |
-| 11 | 2 | Slutprovet: work-stealing-schemaläggare | `exec/scheduler.hpp` |
+### What the language change added to the modules
 
-Lektionerna och labbarna genereras i Arcturon under projektet
-*Parallellverkstan*; styrningen ligger i
-[`docs/arcturon-spargenerator-brief.md`](docs/arcturon-spargenerator-brief.md).
+Four measurements that did not exist in the C version, and all of them *free*
+in the sense that the code already exists:
 
-### Vad språkbytet lade till i modulerna
+* **Module 3:** run the sweep with `McsLock` directly and through `AnyLock`
+  (type-erased). The difference is the cost of dynamic polymorphism, measured
+  in your own lock. The C version's vtable only gave you the second number.
+* **Module 4:** measure your `Future<T>` against `std::future`. Hint: the
+  standard's allocates a shared state per call and takes a lock in `get`.
+* **Module 5:** run the same workload through the templated `bench::run` and
+  through a `std::function` version. The difference is what an indirect call
+  costs in the innermost loop — and explains why the C version's numbers
+  cannot be compared straight off with these.
+* **Module 10:** `std::barrier` is the fourth curve in the chart. Does it beat
+  your three? Read libstdc++'s implementation before you explain it away.
 
-Fyra mätningar som inte fanns i C-versionen, och som alla är *gratis* i den
-meningen att koden redan finns:
+## The books
 
-* **Modul 3:** kör svepet med `McsLock` direkt och genom `AnyLock`
-  (typraderad). Skillnaden är kostnaden för dynamisk polymorfism, mätt i ditt
-  eget lås. C-versionens vtable gav dig bara den andra siffran.
-* **Modul 4:** mät din `Future<T>` mot `std::future`. Ledtråd: standardens
-  allokerar ett delat tillstånd per anrop och tar ett lås i `get`.
-* **Modul 5:** kör samma arbetsbelastning genom den mallade `bench::run` och
-  genom en `std::function`-version. Skillnaden är vad ett indirekt anrop
-  kostar i den innersta loopen — och förklarar varför C-versionens siffror
-  inte går att jämföra rakt av med de här.
-* **Modul 10:** `std::barrier` är den fjärde kurvan i diagrammet. Slår den dina
-  tre? Läs libstdc++:s implementation innan du förklarar bort det.
-
-## Böckerna
-
-* Herlihy & Shavit, **The Art of Multiprocessor Programming** — ryggraden
-* Williams, **C++ Concurrency in Action** (2:a uppl.) — ny med språkbytet;
-  den är till minnesmodellen i C++ vad AMP är till algoritmerna
-* Drepper, *What Every Programmer Should Know About Memory* — cacheresonemanget
-* Boehm, *Threads Cannot Be Implemented as a Library* — varför modellen finns
-* McKenney, *Is Parallel Programming Hard…* — minnesåtervinning och RCU
-* Serebryany & Iskhodzhanov, *ThreadSanitizer* — hur du bevisar frånvaro
+* Herlihy & Shavit, **The Art of Multiprocessor Programming** — the backbone
+* Williams, **C++ Concurrency in Action** (2nd ed.) — new with the language
+  change; it is to the C++ memory model what AMP is to the algorithms
+* Drepper, *What Every Programmer Should Know About Memory* — the cache
+  reasoning
+* Boehm, *Threads Cannot Be Implemented as a Library* — why the model exists
+* McKenney, *Is Parallel Programming Hard…* — memory reclamation and RCU
+* Serebryany & Iskhodzhanov, *ThreadSanitizer* — how you prove absence
 
 ---
 
-## Två maskiner, med flit
+## Two machines, on purpose
 
-Bygg och kör på **både x86-64 och aarch64** (Pi:n, `ssh gunnar`). Litmustesterna
-i modul 2 går igenom på laptopen och faller på ARM. En andra arkitektur med
-svagare minnesmodell är det billigaste sättet att sluta lita på
-"det fungerar på min maskin".
+Build and run on **both x86-64 and aarch64** (the Pi, `ssh gunnar`). The litmus
+tests in module 1 pass on the laptop and fail on ARM. A second architecture
+with a weaker memory model is the cheapest way to stop trusting "it works on my
+machine".
 
-**Och på två kompilatorer.** `make CXX=clang++ check` hittar sådant g++ inte
-ser (clangs `-Wunused-private-field` fällde fem stubbfält första kvällen) och
-svarar annorlunda på `make lockfree`. Två kompilatorer är billigare än en till
-maskin och nästan lika nyttigt.
+**And on two compilers.** `make CXX=clang++ check` finds things g++ does not
+see (clang's `-Wunused-private-field` failed five stub fields the first
+evening) and answers differently on `make lockfree`. Two compilers are cheaper
+than one more machine and almost as useful.
 
 ```bash
-make arm     # korskompilerar om verktygskedjan finns, annars säger den hur du gör
+make arm     # cross-compiles if the tool chain exists, otherwise tells you how
 ```
 
 ---
 
-## Verifierat på
+## Verified on
 
-Alla tre kördes 13 september 2026 på commit `a1fcb76`, 27 tester i sviten.
+All three were run on 13 September 2026 at commit `a1fcb76`, 27 tests in the
+suite.
 
-| Maskin | Arkitektur | Kompilator | Status |
+| Machine | Architecture | Compiler | Status |
 |---|---|---|---|
-| devboxen | x86-64, 24 kärnor | g++ 16.2 **och** clang++ 22.1 | `ALLT GRÖNT` — varje lane kördes |
-| thinkpaden | x86-64, 8 kärnor | g++ 16.2 | `ALLT GRÖNT` — varje lane kördes |
-| gunnar (Pi 5) | **aarch64**, 4 kärnor | g++ 14.2 | `GRÖNT SÅ LÅNGT MASKINEN RÄCKER` — se nedan |
+| devbox | x86-64, 24 cores | g++ 16.2 **and** clang++ 22.1 | `ALL GREEN` — every lane ran |
+| thinkpad | x86-64, 8 cores | g++ 16.2 | `ALL GREEN` — every lane ran |
+| gunnar (Pi 5) | **aarch64**, 4 cores | g++ 14.2 | `GREEN AS FAR AS THE MACHINE REACHES` — see below |
 
-Pi:n saknar `clang-format` och `valgrind`, och ThreadSanitizer **finns** i dess
-gcc men vägrar starta: kärnan ger 47-bitars VMA och TSan stöder 39, 42 och 48.
-`make check` säger det rakt ut och slutar med en annan rubrik:
+The Pi lacks `clang-format` and `valgrind`, and ThreadSanitizer **exists** in
+its gcc but refuses to start: the kernel gives a 47-bit VMA and TSan supports
+39, 42 and 48. `make check` says so plainly and ends with a different heading:
 
 ```
-fmt-check ... HOPPAD — ingen clang-format på aarch64.
-     Formateringen är inte kontrollerad här, inte godkänd.
-── make tsan ── ÖVERHOPPAD: TSan startar inte på aarch64
-1/5  datakapplöpning under TSan ......... OTILLGÄNGLIG  ← TSan startar inte på aarch64.
-2/5  låsordningsinversion (helgrind) .... HOPPAD  ← ingen valgrind på aarch64.
-3/5  garanterad deadlock (watchdog) ..... dödad efter 5 s  ✓
-4/5  minnesläcka under ASan ............. fälld  ✓
-5/5  undantag lämnar låset taget ........ dödad efter 5 s  ✓
-══ GRÖNT SÅ LÅNGT MASKINEN RÄCKER ═══
+fmt-check ... SKIPPED — no clang-format on aarch64.
+     The formatting is not checked here, not approved.
+── make tsan ── SKIPPED: TSan does not start on aarch64
+1/5  data race under TSan .................. UNAVAILABLE  ← TSan does not start on aarch64.
+2/5  lock-order inversion (helgrind) ....... SKIPPED  ← no valgrind on aarch64.
+3/5  guaranteed deadlock (watchdog) ........ killed after 5 s  ✓
+4/5  memory leak under ASan ................ caught  ✓
+5/5  exception leaves the lock held ........ killed after 5 s  ✓
+══ GREEN AS FAR AS THE MACHINE REACHES ═══
 ```
 
-## Tre utfall, aldrig två
+## Three outcomes, never two
 
-Det är repots enda egentliga regel om verktyg, och den har redan tjänat in sig
-fyra gånger:
+It is the repo's only real rule about tools, and it has already paid for itself
+four times:
 
 | | |
 |---|---|
-| **fälld / ok** | verktyget kördes och gav ett svar |
-| **HOPPAD / OTILLGÄNGLIG** | verktyget kunde inte köra — orsaken skrivs ut |
-| **MISSAD / FEL** | verktyget kördes och hittade ingenting → grinden faller |
+| **caught / ok** | the tool ran and gave an answer |
+| **SKIPPED / UNAVAILABLE** | the tool could not run — the reason is printed |
+| **MISSED / FAILED** | the tool ran and found nothing → the gate fails |
 
-Ett verktyg som inte kunde köra har **inte** svarat "nej". Det har inte
-kontrollerat någonting alls. De två får aldrig se likadana ut, för då börjar
-man läsa raden som brus — och då är hela grinden dekoration.
+A tool that could not run has **not** answered "no". It has not checked
+anything at all. The two must never look alike, because then you start reading
+the line as noise — and then the whole gate is decoration.
 
-De fyra gångerna, allihop hittade genom att köra samma commit på en annan
-maskin:
+The four times, all found by running the same commit on another machine:
 
-1. `valgrind` saknades på Pi:n → grinden föll som om koden var trasig
-2. helgrind **kraschade internt** (`hg_main.c:5411: Assertion 'found' failed`)
-   på thinkpaden, för att kanariefågeln skapade en tråd efter en `join`. En
-   kraschad detektor ser i utskriften nästan ut som en ren frikännande.
-3. TSan **startar inte** på Pi:ns VMA-bredd → rått `FATAL`, ingen förklaring
-4. `clang-format` saknades → `fmt-check` svarade **"FEL — kör 'make fmt'"**,
-   alltså skyllde på koden för att verktyget inte fanns. Den värsta av de fyra.
+1. `valgrind` was missing on the Pi → the gate failed as if the code were broken
+2. helgrind **crashed internally** (`hg_main.c:5411: Assertion 'found' failed`)
+   on the thinkpad, because the canary created a thread after a `join`. A
+   crashed detector looks almost like a clean acquittal in the output.
+3. TSan **does not start** at the Pi's VMA width → a raw `FATAL`, no
+   explanation
+4. `clang-format` was missing → `fmt-check` answered **"ERROR — run 'make
+   fmt'"**, i.e. blamed the code because the tool did not exist. The worst of
+   the four.
 
-Fall 2 är också skälet till att `canary_deadlock.cpp` skapar båda trådarna
-innan någon joinas — och i C++ blev den formen den naturliga, eftersom
-`std::jthread` joinar i destruktorn och destruktorerna körs i omvänd ordning
-vid scopets slut.
+Case 2 is also the reason `canary_deadlock.cpp` creates both threads before
+either is joined — and in C++ that form became the natural one, since
+`std::jthread` joins in its destructor and the destructors run in reverse order
+at the end of the scope.
 
-Cachelinjen är 64 byte på alla tre, så `para::kCacheLine` stämmer. Kontrollera
-själv på en ny maskin:
+The cache line is 64 bytes on all three, so `para::kCacheLine` is right. Check
+for yourself on a new machine:
 
 ```bash
 getconf LEVEL1_DCACHE_LINESIZE

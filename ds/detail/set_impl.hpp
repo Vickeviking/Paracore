@@ -1,5 +1,5 @@
-/* ds/detail/set_impl.hpp — MODUL 7 fyller den här filen.
- * Se ds/detail/stack_impl.hpp om varför implementationen ligger i en header. */
+/* ds/detail/set_impl.hpp — MODULE 6 fills this file.
+ * See ds/detail/stack_impl.hpp for why the implementation lives in a header. */
 #ifndef PARACORE_DS_DETAIL_SET_IMPL_HPP
 #define PARACORE_DS_DETAIL_SET_IMPL_HPP
 

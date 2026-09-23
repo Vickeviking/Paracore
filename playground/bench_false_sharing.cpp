@@ -1,4 +1,4 @@
-#include "sync/atomic.hpp" // för para::CacheAligned och kCacheLine
+#include "sync/atomic.hpp" // for para::CacheAligned and kCacheLine
 
 #include <atomic>
 #include <chrono>
@@ -73,7 +73,7 @@ RunResult run_for_threads(unsigned threads, std::uint64_t iterations) {
 }
 
 int main() {
-    constexpr std::uint64_t iterations = 10'000'000; // justera för rimlig tid
+    constexpr std::uint64_t iterations = 10'000'000; // adjust for a reasonable run time
 
     std::cout << "threads,ns_per_update_dense,ns_per_update_aligned\n";
     for (unsigned threads = 1; threads <= 16; ++threads) {
